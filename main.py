@@ -27,6 +27,8 @@ FIRST_COLUMN = column_index_from_string('C')
 LAST_ROW = 56
 FIRST_ROW = 3
 
+STORAGE_FILE = 'cache'
+
 
 class Appointment:
     def __init__(self, title, appointment_type, begin_time, end_time):
@@ -176,8 +178,8 @@ def main():
 
     cache = {}
     new_cache = {}
-    if os.path.exists('cache'):
-        with open("cache") as f:
+    if os.path.exists(STORAGE_FILE):
+        with open(STORAGE_FILE) as f:
             for line in f:
                 (hash, id) = line.split()
                 cache[hash] = id
@@ -247,7 +249,7 @@ def main():
         except Exception as e:
             print(f'Error deleting event with id {id}: {e}.')
 
-    with open("cache", 'w') as f:
+    with open(STORAGE_FILE, 'w') as f:
         for hash, id in new_cache.items():
             f.write(f'{hash} {id}\n')
 
