@@ -13,7 +13,7 @@ from openpyxl.utils import column_index_from_string
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 SCHEDULE = '/Users/julian/OneDrive - Universiteit Leiden/rooster.xlsx'
-CALENDAR_ID = 'o92ho96kpmmsqfd2ingco6h5fk@group.calendar.google.com'
+CALENDAR_ID = 'u2ljfs69g7h26gj5dufjelonn0@group.calendar.google.com'
 
 BEGIN_TIMES_CAMPUS = ['09:00', '10:00', '11:00', '12:00', '13:30', '14:30', '15:30', '16:30', '17:30']
 END_TIMES_CAMPUS = ['09:45', '10:45', '11:45', '12:45', '14:15', '15:15', '16:15', '17:15', '18:15']
@@ -217,6 +217,7 @@ def main():
                 appointment = appointments[-1]
 
                 if appointment.checksum() in cache:
+                    new_cache[appointment.checksum()] = cache[appointment.checksum()]
                     cache.pop(appointment.checksum())
                     appointments.pop(-1)
 
@@ -231,13 +232,20 @@ def main():
         cell = get_next_cell(cell, workbook)
 
     for appointment in create_appointments:
-        event = service.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute()
-        new_cache[appointment.checksum()] = event.get('id')
-        print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
+        try:
+            event = service.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(
+                num_retries=10)
+            new_cache[appointment.checksum()] = event.get('id')
+            print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
+        except Exception as e:
+            print(f'Error creating event with checksum {appointment.checksum()}: {e}.')
 
     for id in cache.values():
-        service.events().delete(calendarId='primary', eventId=id).execute()
-        print(f'Deleted event with id {id}')
+        try:
+            service.events().delete(calendarId='primary', eventId=id).execute(num_retries=10)
+            print(f'Deleted event with id {id}.')
+        except Exception as e:
+            print(f'Error deleting event with id {id}: {e}.')
 
     with open("cache", 'w') as f:
         for hash, id in new_cache.items():
