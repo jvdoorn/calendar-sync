@@ -242,7 +242,7 @@ def main():
 
     for id in cache.values():
         try:
-            service.events().delete(calendarId='primary', eventId=id).execute(num_retries=10)
+            service.events().delete(calendarId=CALENDAR_ID, eventId=id).execute(num_retries=10)
             print(f'Deleted event with id {id}.')
         except Exception as e:
             print(f'Error deleting event with id {id}: {e}.')
