@@ -27,7 +27,7 @@ FIRST_COLUMN = column_index_from_string('C')
 LAST_ROW = 56
 FIRST_ROW = 3
 
-STORAGE_FILE = 'cache'
+STORAGE_FILE = 'storage'
 
 
 class Appointment:
