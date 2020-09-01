@@ -84,7 +84,7 @@ def get_appointment_type(cell):
 
     color = cell.fill.fgColor
 
-    if color.theme is 8:
+    if str(color.rgb) == 'FF5B9BD5' or color.theme is 8:
         return AppointmentType.CAMPUS
     elif color.theme is 5:
         return AppointmentType.EXAM
@@ -173,37 +173,49 @@ def get_credentials():
 
 
 def main():
+    # Authenticate to Google
     credentials = get_credentials()
-
+    # Access the Calendar API
     service = build('calendar', 'v3', credentials=credentials)
 
-    cache = {}
-    new_cache = {}
+    stored_appointments = {}
+    new_appointments = {}
+
+    # Load all stored appointments
     if os.path.exists(STORAGE_FILE):
         with open(STORAGE_FILE) as f:
             for line in f:
-                (hash, id) = line.split()
-                cache[hash] = id
+                # Load all the checksum-id-pairs.
+                (checksum, id) = line.split()
+                stored_appointments[checksum] = id
 
-    create_appointments = []
+    # Open the workbook (spreadsheet)
     workbook = load_workbook(SCHEDULE).active
-    cell = Cell(workbook, row=FIRST_ROW, column=FIRST_COLUMN)
-    previous_appointments = []
-    while cell:
-        appointment_type = get_appointment_type(workbook[cell.coordinate])
-        begin_time = get_begin_time(cell, appointment_type)
-        end_time = get_end_time(cell, appointment_type, workbook)
 
+    # These are the appointments that have to be created or looked up in the cache
+    create_appointments = []
+
+    # The appointments of the previous iteration
+    previous_appointments = []
+    # Fetch the first cell
+    cell = Cell(workbook, row=FIRST_ROW, column=FIRST_COLUMN)
+    while cell:
+        # These are the appointments found in this cell
         appointments = []
 
+        # Determine the title of the cell
         raw_title = workbook[cell.coordinate].value
         if raw_title:
+            # Split the title if multiple are present (seperated by ' / ')
             titles = raw_title.split(' / ')
 
-            for title in titles:
-                if title is None:
-                    continue
+            # Determine the appointment type, begin time and end time.
+            appointment_type = get_appointment_type(workbook[cell.coordinate])
+            begin_time = get_begin_time(cell, appointment_type)
+            end_time = get_end_time(cell, appointment_type, workbook)
 
+            for title in titles:
+                # Check if we should merge with a previous appointment
                 found = False
                 for i in range(len(previous_appointments)):
                     previous_appointment = previous_appointments[i]
@@ -213,38 +225,49 @@ def main():
                         previous_appointments.pop(i)
                         found = True
                         break
+                # If not, create a new appointment
                 if not found:
                     appointments.append(Appointment(title, appointment_type, begin_time, end_time))
 
+            # Add any previous appointments (that we did not touch)
             create_appointments += previous_appointments
+            # Determine if there is a next cell
             if get_next_cell(cell, workbook) is None:
+                # If there is not this was the last iteration and we should add the current appointments
                 create_appointments += appointments
+            # Update the previous appointments
             previous_appointments = appointments
         else:
+            # The cell was empty add the previous appointments and clear the array
             create_appointments += previous_appointments
             previous_appointments = []
 
+        # Get the next cell
         cell = get_next_cell(cell, workbook)
 
+    # Create all the new or updated appointments
     for appointment in create_appointments:
-        if appointment.checksum() in cache:
+        # Check if we previously created the appointment
+        if appointment.checksum() in stored_appointments:
             # Add it to the new cache
-            new_cache[appointment.checksum()] = cache[appointment.checksum()]
+            new_appointments[appointment.checksum()] = stored_appointments[appointment.checksum()]
             # Remove it from the old cache (performance)
-            cache.pop(appointment.checksum())
+            stored_appointments.pop(appointment.checksum())
         else:
+            # If we did not previously create the appointment we will do so now
             try:
                 # Create the event
                 event = service.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(
                     num_retries=10)
                 # Add it to the new cache
-                new_cache[appointment.checksum()] = event.get('id')
+                new_appointments[appointment.checksum()] = event.get('id')
                 # Let the user know we created a new event
                 print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
             except Exception as e:
                 print(f'Error creating event with checksum {appointment.checksum()}: {e}.')
 
-    for id in cache.values():
+    # Delete any appointments that have been removed or updated in the spreadsheet.
+    for id in stored_appointments.values():
         try:
             # Delete the old event
             service.events().delete(calendarId=CALENDAR_ID, eventId=id).execute(num_retries=10)
@@ -253,10 +276,10 @@ def main():
         except Exception as e:
             print(f'Error deleting event with id {id}: {e}.')
 
+    # Save the updated storage to disk
     with open(STORAGE_FILE, 'w') as f:
-        # Save the new cache to disk
-        for hash, id in new_cache.items():
-            f.write(f'{hash} {id}\n')
+        for checksum, id in new_appointments.items():
+            f.write(f'{checksum} {id}\n')
 
 
 if __name__ == '__main__':
