@@ -186,8 +186,8 @@ def main():
         with open(STORAGE_FILE) as f:
             for line in f:
                 # Load all the checksum-id-pairs.
-                (checksum, id) = line.split()
-                stored_appointments[checksum] = id
+                (checksum, uid) = line.split()
+                stored_appointments[checksum] = uid
 
     # Open the workbook (spreadsheet)
     workbook = load_workbook(SCHEDULE).active
@@ -267,19 +267,19 @@ def main():
                 print(f'Error creating event with checksum {appointment.checksum()}: {e}.')
 
     # Delete any appointments that have been removed or updated in the spreadsheet.
-    for id in stored_appointments.values():
+    for uid in stored_appointments.values():
         try:
             # Delete the old event
-            service.events().delete(calendarId=CALENDAR_ID, eventId=id).execute(num_retries=10)
+            service.events().delete(calendarId=CALENDAR_ID, eventId=uid).execute(num_retries=10)
             # Let the user know we deleted an event
-            print(f'Deleted event with id {id}.')
+            print(f'Deleted event with uid {uid}.')
         except Exception as e:
-            print(f'Error deleting event with id {id}: {e}.')
+            print(f'Error deleting event with uid {uid}: {e}.')
 
     # Save the updated storage to disk
     with open(STORAGE_FILE, 'w') as f:
-        for checksum, id in new_appointments.items():
-            f.write(f'{checksum} {id}\n')
+        for checksum, uid in new_appointments.items():
+            f.write(f'{checksum} {uid}\n')
 
 
 if __name__ == '__main__':
