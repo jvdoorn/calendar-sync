@@ -90,10 +90,11 @@ def get_appointment_type(cell):
         return AppointmentType.EXAM
     elif str(color.rgb) == '00000000':
         return AppointmentType.ONLINE
-    elif str(color.rgb) == 'FFFFC000':
+    elif str(color.rgb) == 'FFFFC000' or color.theme == 7:
         return AppointmentType.HOLIDAY
-
-    raise Exception(f'Failed to determine AppointmentType from cell formatting {color}.')
+    else:
+        print(f'WARNING: failed to determine appointment type for {cell.value} with color {color}.')
+        return AppointmentType.EMPTY
 
 
 def get_merged_range(cell, ws):
@@ -201,7 +202,7 @@ def main():
 
             for title in titles:
                 if title is None:
-                    pass
+                    continue
 
                 found = False
                 for i in range(len(previous_appointments)):
@@ -213,15 +214,7 @@ def main():
                         found = True
                         break
                 if not found:
-                    appointments.append(Appointment(title, appointment_type, begin_time,
-                                                    end_time))
-
-                appointment = appointments[-1]
-
-                if appointment.checksum() in cache:
-                    new_cache[appointment.checksum()] = cache[appointment.checksum()]
-                    cache.pop(appointment.checksum())
-                    appointments.pop(-1)
+                    appointments.append(Appointment(title, appointment_type, begin_time, end_time))
 
             create_appointments += previous_appointments
             if get_next_cell(cell, workbook) is None:
@@ -234,22 +227,34 @@ def main():
         cell = get_next_cell(cell, workbook)
 
     for appointment in create_appointments:
-        try:
-            event = service.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(
-                num_retries=10)
-            new_cache[appointment.checksum()] = event.get('id')
-            print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
-        except Exception as e:
-            print(f'Error creating event with checksum {appointment.checksum()}: {e}.')
+        if appointment.checksum() in cache:
+            # Add it to the new cache
+            new_cache[appointment.checksum()] = cache[appointment.checksum()]
+            # Remove it from the old cache (performance)
+            cache.pop(appointment.checksum())
+        else:
+            try:
+                # Create the event
+                event = service.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(
+                    num_retries=10)
+                # Add it to the new cache
+                new_cache[appointment.checksum()] = event.get('id')
+                # Let the user know we created a new event
+                print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
+            except Exception as e:
+                print(f'Error creating event with checksum {appointment.checksum()}: {e}.')
 
     for id in cache.values():
         try:
+            # Delete the old event
             service.events().delete(calendarId=CALENDAR_ID, eventId=id).execute(num_retries=10)
+            # Let the user know we deleted an event
             print(f'Deleted event with id {id}.')
         except Exception as e:
             print(f'Error deleting event with id {id}: {e}.')
 
     with open(STORAGE_FILE, 'w') as f:
+        # Save the new cache to disk
         for hash, id in new_cache.items():
             f.write(f'{hash} {id}\n')
 
