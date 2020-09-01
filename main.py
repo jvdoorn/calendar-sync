@@ -1,3 +1,8 @@
+"""
+Main file of calendar-sync. Originally written by
+Julian van Doorn <jvdoorn@antarc.com>.
+"""
+
 import datetime
 import hashlib
 import os
@@ -31,6 +36,11 @@ STORAGE_FILE = 'storage'
 
 
 class Appointment:
+    """
+    Appointment class, used to store some basic information and functions to serialize and
+    determine its checksum.
+    """
+
     def __init__(self, title, appointment_type, begin_time, end_time):
         self.title = title
         self.appointment_type = appointment_type
@@ -38,10 +48,18 @@ class Appointment:
         self.end_time = end_time
 
     def checksum(self):
+        """
+        Generates a checksum to detect if the appointment changed.
+        :return: a md5 checksum.
+        """
         return hashlib.md5(
             (self.title + str(self.appointment_type) + self.begin_time + self.end_time).encode()).hexdigest()
 
     def serialize(self):
+        """
+        Serializes the appointment so we can upload it to Google.
+        :return: a dictionary which can be passed to the Google API.
+        """
         if self.appointment_type == AppointmentType.HOLIDAY:
             return {
                 'summary': self.title,
@@ -75,10 +93,19 @@ class Appointment:
 
 
 class AppointmentType(Enum):
+    """
+    Some appointment types which are used to determine par example start and
+    end times.
+    """
     HOLIDAY, ONLINE, CAMPUS, EXAM, EMPTY = 'HOLIDAY', 'ONLINE', 'CAMPUS', 'EXAM', 'EMPTY'
 
 
 def get_appointment_type(cell):
+    """
+    Determines the appointment type of a cell based on its color.
+    :param cell: a cell in the worksheet.
+    :return: the appointment type.
+    """
     if cell.value is None:
         return AppointmentType.EMPTY
 
@@ -98,6 +125,12 @@ def get_appointment_type(cell):
 
 
 def get_merged_range(cell, ws):
+    """
+    Attempts to find a merged cell which contains the specified cell.
+    :param cell: the cell to check.
+    :param ws: the worksheet.
+    :return: a merged cell range or None.
+    """
     for cell_range in ws.merged_cells.ranges:
         if cell.coordinate in cell_range:
             return cell_range
@@ -105,10 +138,23 @@ def get_merged_range(cell, ws):
 
 
 def get_last_in_range(cell_range, ws):
+    """
+    Determines the last cell in a cell range.
+    :param cell_range: a cell range.
+    :param ws: the worksheet.
+    :return: the last cell in the cell range.
+    """
     return Cell(ws, row=cell_range.max_row, column=cell_range.max_col)
 
 
 def get_next_cell(cell, ws, check_merged=True):
+    """
+    Determines the next cell which we need to parse.
+    :param cell: the current cell.
+    :param ws: the worksheet.
+    :param check_merged: whether we should check if the cell is merged.
+    :return: the next cell or None if this was the last cell.
+    """
     if cell.row == LAST_ROW and cell.column == LAST_COLUMN:
         return None
 
@@ -123,11 +169,22 @@ def get_next_cell(cell, ws, check_merged=True):
 
 
 def get_date(cell):
+    """
+    Determines the date of a cell.
+    :param cell: the cell.
+    :return: a String containing the date (properly formatted for Google).
+    """
     return (FIRST_DATE + datetime.timedelta(
         days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)).strftime('%Y-%m-%d')
 
 
 def get_begin_time(cell, appointment_type):
+    """
+    Determines the begin time of a cell.
+    :param cell: the cell
+    :param appointment_type: the appointment type of the cell.
+    :return: a date and time (properly formatted for Google).
+    """
     date = get_date(cell)
 
     if appointment_type is AppointmentType.CAMPUS:
@@ -137,6 +194,13 @@ def get_begin_time(cell, appointment_type):
 
 
 def get_end_time(cell, appointment_type, ws):
+    """
+    Determines the end time of a cell (range).
+    :param cell: the start cell.
+    :param appointment_type: the appointment type of the cell.
+    :param ws: the worksheet.
+    :return: a date and time (properly formatted for Google).
+    """
     date = get_date(cell)
 
     cell_range = get_merged_range(cell, ws)
@@ -150,6 +214,10 @@ def get_end_time(cell, appointment_type, ws):
 
 
 def get_credentials():
+    """
+    Attempts to load the credentials from file or generates new ones.
+    :return: the credentials to authenticate with Google.
+    """
     credentials = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -173,6 +241,10 @@ def get_credentials():
 
 
 def main():
+    """
+    The main method.
+    :return: nothing.
+    """
     # Authenticate to Google
     credentials = get_credentials()
     # Access the Calendar API
