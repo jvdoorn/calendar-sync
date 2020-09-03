@@ -4,7 +4,7 @@ This program is designed to sync a Excel spreadsheet to your Google calendar. It
 
 To use this software you need to [create a Google Project](https://console.cloud.google.com/cloud-resource-manager). After this you need to [enable the Calendar API](https://support.google.com/googleapi/answer/6158841?hl=en). Finally [download the credentials](https://cloud.google.com/docs/authentication/getting-started) and put them in same directory as `main.py`, the file should be called `credentials.json`.
 
-In `main.py` you should update the value of `CALENDAR_ID` to match your own Calendar, this can either be `PRIMARY` or another calendar specifified by `something@group.calendar.google.com`. To find the url of your calendar go to settings on Google Calendar. You should also specify a relative or absolute path to your Excel spreadsheet.
+In `config.py` you should update the value of `CALENDAR_ID` to match your own Calendar, this can either be `PRIMARY` or another calendar specified by `something@group.calendar.google.com`. To find the url of your calendar go to settings on Google Calendar. You should also specify a relative or absolute path to your Excel spreadsheet (`SCHEDULE`).
 
 To sync your calendar run `python main.py`. This will parse the specified spreadsheet and upload the appointments to your Google calendar. If you make any changes in the spreadsheet just run the script again and it will update your Google calendar.
 
