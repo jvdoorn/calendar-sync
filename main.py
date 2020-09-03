@@ -13,12 +13,7 @@ from appointment import Appointment, get_appointment_type, get_begin_time, get_e
 from config import CALENDAR_ID, FIRST_COLUMN, FIRST_ROW, SCHEDULE, STORAGE_FILE
 from utils import get_credentials, get_next_cell
 
-
-def main():
-    """
-    The main method.
-    :return: nothing.
-    """
+if __name__ == '__main__':
     # Authenticate to Google
     credentials = get_credentials()
     # Access the Calendar API
@@ -126,7 +121,3 @@ def main():
     with open(STORAGE_FILE, 'w') as f:
         for checksum, uid in new_appointments.items():
             f.write(f'{checksum} {uid}\n')
-
-
-if __name__ == '__main__':
-    main()
