@@ -25,13 +25,52 @@ class Appointment:
         self.begin_time = begin_time
         self.end_time = end_time
 
-    def checksum(self):
+    def checksum(self, old: bool = False) -> str:
         """
         Generates a checksum to detect if the appointment changed.
+        :param old: whether or not to use the old algorithm.
         :return: a md5 checksum.
         """
-        return hashlib.md5(
-            (self.title + str(self.appointment_type) + self.begin_time + self.end_time).encode()).hexdigest()
+        if old:
+            return hashlib.md5(
+                (self.title + str(self.appointment_type) + self.begin_time + self.end_time).encode()
+            ).hexdigest()
+        else:
+            return hashlib.md5(
+                str(self.serialize()).encode()
+            ).hexdigest()
+
+    def get_begin_time(self) -> dict:
+        """
+        Returns a properly formatted begin time for Google.
+        :return: the begin time.
+        """
+        if self.appointment_type == AppointmentType.HOLIDAY:
+            return {
+                'date': self.begin_time.split('T')[0],
+                'timeZone': 'Europe/Amsterdam',
+            }
+        else:
+            return {
+                'dateTime': self.begin_time,
+                'timeZone': 'Europe/Amsterdam',
+            }
+
+    def get_end_time(self) -> dict:
+        """
+        Returns a properly formatted end time for Google.
+        :return: the end time.
+        """
+        if self.appointment_type == AppointmentType.HOLIDAY:
+            return {
+                'date': self.end_time.split('T')[0],
+                'timeZone': 'Europe/Amsterdam',
+            }
+        else:
+            return {
+                'dateTime': self.end_time,
+                'timeZone': 'Europe/Amsterdam',
+            }
 
     def serialize(self):
         """

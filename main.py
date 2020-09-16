@@ -94,6 +94,11 @@ if __name__ == '__main__':
             new_appointments[appointment.checksum()] = stored_appointments[appointment.checksum()]
             # Remove it from the old cache (performance)
             stored_appointments.pop(appointment.checksum())
+        elif appointment.checksum(True) in stored_appointments:
+            # Add it to the new cache
+            new_appointments[appointment.checksum()] = stored_appointments[appointment.checksum(True)]
+            # Remove it from the old cache (performance)
+            stored_appointments.pop(appointment.checksum(True))
         else:
             # If we did not previously create the appointment we will do so now
             try:
