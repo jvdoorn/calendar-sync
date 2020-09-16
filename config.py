@@ -23,4 +23,6 @@ FIRST_COLUMN = column_index_from_string('C')
 LAST_ROW = 56
 FIRST_ROW = 3
 
+CAMPUS_LOCATION = "Niels Bohrweg 2\n2333 CA Leiden\nNetherlands"
+
 STORAGE_FILE = 'storage'
