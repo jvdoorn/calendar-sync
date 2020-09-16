@@ -8,8 +8,8 @@ import datetime
 import hashlib
 from enum import Enum
 
-from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, FIRST_DATE, \
-    FIRST_ROW
+from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, \
+    FIRST_DATE, FIRST_ROW
 from utils import get_last_in_range, get_merged_range
 
 
@@ -77,36 +77,14 @@ class Appointment:
         Serializes the appointment so we can upload it to Google.
         :return: a dictionary which can be passed to the Google API.
         """
-        if self.appointment_type == AppointmentType.HOLIDAY:
-            return {
-                'summary': self.title,
-                'start': {
-                    'date': self.begin_time.split('T')[0],
-                    'timeZone': 'Europe/Amsterdam',
-                },
-                'end': {
-                    'date': self.end_time.split('T')[0],
-                    'timeZone': 'Europe/Amsterdam',
-                },
-                'reminders': {
-                    'useDefault': True,
-                }
+        return {
+            'summary': self.title,
+            'start': self.get_begin_time(),
+            'end': self.get_end_time(),
+            'reminders': {
+                'useDefault': True,
             }
-        else:
-            return {
-                'summary': self.title,
-                'start': {
-                    'dateTime': self.begin_time,
-                    'timeZone': 'Europe/Amsterdam',
-                },
-                'end': {
-                    'dateTime': self.end_time,
-                    'timeZone': 'Europe/Amsterdam',
-                },
-                'reminders': {
-                    'useDefault': True,
-                }
-            }
+        }
 
 
 class AppointmentType(Enum):
