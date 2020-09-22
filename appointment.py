@@ -42,7 +42,12 @@ class Appointment:
             ).hexdigest()
 
     def _is_all_day(self) -> bool:
-        return self.appointment_type == AppointmentType.HOLIDAY or (EXAMS_ALL_DAY and self.appointment_type == AppointmentType.EXAM)
+        """
+        Determines whether the appointment takes all day.
+        :return: whether the appointment is all day.
+        """
+        return self.appointment_type == AppointmentType.HOLIDAY or (
+                    EXAMS_ALL_DAY and self.appointment_type == AppointmentType.EXAM)
 
     def get_begin_time(self) -> dict:
         """
