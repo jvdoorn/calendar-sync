@@ -125,9 +125,9 @@ def get_appointment_type(cell):
 
     color = cell.fill.fgColor
 
-    if str(color.rgb) == 'FF5B9BD5' or color.theme is 8:
+    if str(color.rgb) == 'FF5B9BD5' or color.theme == 8:
         return AppointmentType.CAMPUS
-    elif color.theme is 5:
+    elif color.theme == 5:
         return AppointmentType.EXAM
     elif str(color.rgb) == '00000000':
         return AppointmentType.ONLINE
