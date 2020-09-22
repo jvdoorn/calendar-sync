@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Union
 
 from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, CAMPUS_LOCATION, END_TIMES_CAMPUS, END_TIMES_ONLINE, \
-    FIRST_COLUMN, FIRST_DATE, FIRST_ROW
+    EXAMS_ALL_DAY, FIRST_COLUMN, FIRST_DATE, FIRST_ROW
 from utils import get_last_in_range, get_merged_range
 
 
@@ -41,12 +41,15 @@ class Appointment:
                 str(self.serialize()).encode()
             ).hexdigest()
 
+    def _is_all_day(self) -> bool:
+        return self.appointment_type == AppointmentType.HOLIDAY or (EXAMS_ALL_DAY and self.appointment_type == AppointmentType.EXAM)
+
     def get_begin_time(self) -> dict:
         """
         Returns a properly formatted begin time for Google.
         :return: the begin time.
         """
-        if self.appointment_type == AppointmentType.HOLIDAY:
+        if self._is_all_day():
             return {
                 'date': self.begin_time.split('T')[0],
                 'timeZone': 'Europe/Amsterdam',
@@ -62,7 +65,7 @@ class Appointment:
         Returns a properly formatted end time for Google.
         :return: the end time.
         """
-        if self.appointment_type == AppointmentType.HOLIDAY:
+        if self._is_all_day():
             return {
                 'date': self.end_time.split('T')[0],
                 'timeZone': 'Europe/Amsterdam',
