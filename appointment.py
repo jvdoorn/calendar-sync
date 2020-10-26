@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Union
 
 from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, CAMPUS_LOCATION, END_TIMES_CAMPUS, END_TIMES_ONLINE, \
-    EXAMS_ALL_DAY, FIRST_COLUMN, FIRST_DATE, FIRST_ROW
+    EXAMS_ALL_DAY, FIRST_COLUMN, FIRST_DATE, FIRST_ROW, TIME_ZONE
 from utils import get_last_in_range, get_merged_range
 
 
@@ -57,12 +57,12 @@ class Appointment:
         if self._is_all_day():
             return {
                 'date': self.begin_time.split('T')[0],
-                'timeZone': 'Europe/Amsterdam',
+                'timeZone': TIME_ZONE,
             }
         else:
             return {
                 'dateTime': self.begin_time,
-                'timeZone': 'Europe/Amsterdam',
+                'timeZone': TIME_ZONE,
             }
 
     def get_end_time(self) -> dict:
@@ -73,12 +73,12 @@ class Appointment:
         if self._is_all_day():
             return {
                 'date': self.end_time.split('T')[0],
-                'timeZone': 'Europe/Amsterdam',
+                'timeZone': TIME_ZONE,
             }
         else:
             return {
                 'dateTime': self.end_time,
-                'timeZone': 'Europe/Amsterdam',
+                'timeZone': TIME_ZONE,
             }
 
     def get_location(self) -> Union[str, None]:
@@ -163,9 +163,9 @@ def get_begin_time(cell, appointment_type):
     date = get_date(cell)
 
     if appointment_type is AppointmentType.CAMPUS:
-        return date + 'T' + BEGIN_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00+02:00'
+        return date + 'T' + BEGIN_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00'
     else:
-        return date + 'T' + BEGIN_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00+02:00'
+        return date + 'T' + BEGIN_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00'
 
 
 def get_end_time(cell, appointment_type, ws):
@@ -183,6 +183,6 @@ def get_end_time(cell, appointment_type, ws):
         cell = get_last_in_range(cell_range, ws)
 
     if appointment_type is AppointmentType.CAMPUS:
-        return date + 'T' + END_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00+02:00'
+        return date + 'T' + END_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00'
     else:
-        return date + 'T' + END_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00+02:00'
+        return date + 'T' + END_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00'

@@ -27,3 +27,5 @@ FIRST_ROW = 3
 CAMPUS_LOCATION = "Niels Bohrweg 2\n2333 CA Leiden\nNetherlands"
 
 STORAGE_FILE = 'storage'
+
+TIME_ZONE = 'Europe/Amsterdam'
