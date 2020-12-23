@@ -69,11 +69,6 @@ if __name__ == '__main__':
             workbook_appointments[appointment.checksum()] = calendar_appointments[appointment.checksum()]
             # Remove it from the old cache (performance)
             calendar_appointments.pop(appointment.checksum())
-        elif appointment.legacy_checksum() in calendar_appointments:
-            # Add it to the new cache
-            workbook_appointments[appointment.checksum()] = calendar_appointments[appointment.checksum(True)]
-            # Remove it from the old cache (performance)
-            calendar_appointments.pop(appointment.checksum(True))
         else:
             event_id = create_appointment(calendar, appointment)
             if event_id is not None:

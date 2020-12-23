@@ -35,15 +35,6 @@ class Appointment:
             str(self.serialize()).encode()
         ).hexdigest()
 
-    def legacy_checksum(self) -> str:
-        """
-        Generates a checksum based on legacy method to detect if the appointment changed.
-        :return: a md4 checksum.
-        """
-        return hashlib.md5(
-            (self.title + str(self.appointment_type) + self.appointment_begin_time + self.appointment_end_time).encode()
-        ).hexdigest()
-
     def _is_all_day(self) -> bool:
         """
         Determines whether the appointment takes all day.
