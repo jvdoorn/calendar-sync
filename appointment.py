@@ -20,11 +20,11 @@ class Appointment:
     determine its checksum.
     """
 
-    def __init__(self, title, appointment_type, begin_time, end_time):
+    def __init__(self, title, appointment_type, appointment_begin_time, appointment_end_time):
         self.title = title
         self.appointment_type = appointment_type
-        self.begin_time = begin_time
-        self.end_time = end_time
+        self.appointment_begin_time = appointment_begin_time
+        self.appointment_end_time = appointment_end_time
 
     def checksum(self, old: bool = False) -> str:
         """
@@ -34,7 +34,7 @@ class Appointment:
         """
         if old:
             return hashlib.md5(
-                (self.title + str(self.appointment_type) + self.begin_time + self.end_time).encode()
+                (self.title + str(self.appointment_type) + self.appointment_begin_time + self.appointment_end_time).encode()
             ).hexdigest()
         else:
             return hashlib.md5(
@@ -56,12 +56,12 @@ class Appointment:
         """
         if self._is_all_day():
             return {
-                'date': self.begin_time.split('T')[0],
+                'date': self.appointment_begin_time.split('T')[0],
                 'timeZone': TIME_ZONE,
             }
         else:
             return {
-                'dateTime': self.begin_time,
+                'dateTime': self.appointment_begin_time,
                 'timeZone': TIME_ZONE,
             }
 
@@ -72,12 +72,12 @@ class Appointment:
         """
         if self._is_all_day():
             return {
-                'date': self.end_time.split('T')[0],
+                'date': self.appointment_end_time.split('T')[0],
                 'timeZone': TIME_ZONE,
             }
         else:
             return {
-                'dateTime': self.end_time,
+                'dateTime': self.appointment_end_time,
                 'timeZone': TIME_ZONE,
             }
 
