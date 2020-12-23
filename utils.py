@@ -8,9 +8,11 @@ import pickle
 
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build as get_service
+from openpyxl import load_workbook
 from openpyxl.cell import Cell
 
-from config import FIRST_COLUMN, LAST_COLUMN, LAST_ROW, SCOPES
+from config import CALENDAR_ID, FIRST_COLUMN, FIRST_ROW, LAST_COLUMN, LAST_ROW, SCHEDULE, SCOPES, STORAGE_FILE
 
 
 def get_merged_range(cell, ws):
@@ -82,3 +84,60 @@ def get_credentials():
             pickle.dump(credentials, token)
 
     return credentials
+
+
+def get_calendar_service():
+    credentials = get_credentials()
+    return get_service('calendar', 'v3', credentials=credentials)
+
+
+def load_cached_appointments_from_disk():
+    stored_appointments = {}
+
+    if os.path.exists(STORAGE_FILE):
+        with open(STORAGE_FILE) as f:
+            for line in f:
+                (checksum, uid) = line.split()
+                stored_appointments[checksum] = uid
+
+    return stored_appointments
+
+
+def load_workbook_from_disk():
+    return load_workbook(SCHEDULE).active
+
+
+def get_first_cell(workbook):
+    return Cell(workbook, row=FIRST_ROW, column=FIRST_COLUMN)
+
+
+def get_appointment_titles_from_cell(cell, workbook):
+    content = workbook[cell.coordinate].value
+    return [] if content is None else content.split(' / ')
+
+
+def update_end_time(previous_appointment, new_end_time):
+    previous_appointment.appointment_end_time = new_end_time
+
+
+def create_appointment(calendar, appointment):
+    try:
+        # Create the event
+        event = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(
+            num_retries=10)
+        # Let the user know we created a new event
+        print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
+        return event.get('id')
+    except Exception as e:
+        print(f'Error creating event with checksum {appointment.checksum()}: {e}.')
+        return None
+
+
+def delete_appointment(calendar, event_id):
+    try:
+        # Delete the old event
+        calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id).execute(num_retries=10)
+        # Let the user know we deleted an event
+        print(f'Deleted event with uid {event_id}.')
+    except Exception as e:
+        print(f'Error deleting event with uid {event_id}: {e}.')

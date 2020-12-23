@@ -26,20 +26,23 @@ class Appointment:
         self.appointment_begin_time = appointment_begin_time
         self.appointment_end_time = appointment_end_time
 
-    def checksum(self, old: bool = False) -> str:
+    def checksum(self) -> str:
         """
         Generates a checksum to detect if the appointment changed.
-        :param old: whether or not to use the old algorithm.
         :return: a md5 checksum.
         """
-        if old:
-            return hashlib.md5(
-                (self.title + str(self.appointment_type) + self.appointment_begin_time + self.appointment_end_time).encode()
-            ).hexdigest()
-        else:
-            return hashlib.md5(
-                str(self.serialize()).encode()
-            ).hexdigest()
+        return hashlib.md5(
+            str(self.serialize()).encode()
+        ).hexdigest()
+
+    def legacy_checksum(self) -> str:
+        """
+        Generates a checksum based on legacy method to detect if the appointment changed.
+        :return: a md4 checksum.
+        """
+        return hashlib.md5(
+            (self.title + str(self.appointment_type) + self.appointment_begin_time + self.appointment_end_time).encode()
+        ).hexdigest()
 
     def _is_all_day(self) -> bool:
         """
@@ -47,7 +50,7 @@ class Appointment:
         :return: whether the appointment is all day.
         """
         return self.appointment_type == AppointmentType.HOLIDAY or (
-                    EXAMS_ALL_DAY and self.appointment_type == AppointmentType.EXAM)
+                EXAMS_ALL_DAY and self.appointment_type == AppointmentType.EXAM)
 
     def get_begin_time(self) -> dict:
         """
@@ -119,7 +122,7 @@ class AppointmentType(Enum):
     HOLIDAY, ONLINE, CAMPUS, EXAM, EMPTY = 'HOLIDAY', 'ONLINE', 'CAMPUS', 'EXAM', 'EMPTY'
 
 
-def get_appointment_type(cell):
+def get_cell_type(cell):
     """
     Determines the appointment type of a cell based on its color.
     :param cell: a cell in the worksheet.
@@ -153,7 +156,7 @@ def get_date(cell):
         days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)).strftime('%Y-%m-%d')
 
 
-def get_begin_time(cell, appointment_type):
+def get_cell_begin_time(cell, appointment_type):
     """
     Determines the begin time of a cell.
     :param cell: the cell
@@ -168,7 +171,7 @@ def get_begin_time(cell, appointment_type):
         return date + 'T' + BEGIN_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00'
 
 
-def get_end_time(cell, appointment_type, ws):
+def get_cell_end_time(cell, appointment_type, ws):
     """
     Determines the end time of a cell (range).
     :param cell: the start cell.
