@@ -5,9 +5,9 @@ Julian van Doorn <jvdoorn@antarc.com>.
 
 from utils import *
 
-if __name__ == '__main__':
+
+def main():
     calendar = get_calendar_service()
-    workbook = load_workbook_from_disk()
 
     remote_appointments: dict = load_cached_appointments_from_disk()
     local_appointments: dict = {}
@@ -30,3 +30,7 @@ if __name__ == '__main__':
     with open(STORAGE_FILE, 'w') as f:
         for checksum, uid in local_appointments.items():
             f.write(f'{checksum} {uid}\n')
+
+
+if __name__ == '__main__':
+    main()
