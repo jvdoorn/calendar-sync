@@ -4,14 +4,11 @@ functions regarding appointments. Originally written by
 Julian van Doorn <jvdoorn@antarc.com>.
 """
 
-import datetime
 import hashlib
 from enum import Enum
 from typing import Union
 
-from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, CAMPUS_LOCATION, END_TIMES_CAMPUS, END_TIMES_ONLINE, \
-    EXAMS_ALL_DAY, FIRST_COLUMN, FIRST_DATE, FIRST_ROW, TIME_ZONE
-from utils import get_last_in_range, get_merged_range
+from config import CAMPUS_LOCATION, EXAMS_ALL_DAY, TIME_ZONE
 
 
 class Appointment:
@@ -111,72 +108,3 @@ class AppointmentType(Enum):
     end times.
     """
     HOLIDAY, ONLINE, CAMPUS, EXAM, EMPTY = 'HOLIDAY', 'ONLINE', 'CAMPUS', 'EXAM', 'EMPTY'
-
-
-def get_cell_type(cell):
-    """
-    Determines the appointment type of a cell based on its color.
-    :param cell: a cell in the worksheet.
-    :return: the appointment type.
-    """
-    if cell.value is None:
-        return AppointmentType.EMPTY
-
-    color = cell.fill.fgColor
-
-    if str(color.rgb) == 'FF5B9BD5' or color.theme == 8:
-        return AppointmentType.CAMPUS
-    elif color.theme == 5:
-        return AppointmentType.EXAM
-    elif str(color.rgb) == '00000000':
-        return AppointmentType.ONLINE
-    elif str(color.rgb) == 'FFFFC000' or color.theme == 7:
-        return AppointmentType.HOLIDAY
-    else:
-        print(f'WARNING: failed to determine appointment type for {cell.value} with color {color}.')
-        return AppointmentType.EMPTY
-
-
-def get_date(cell):
-    """
-    Determines the date of a cell.
-    :param cell: the cell.
-    :return: a String containing the date (properly formatted for Google).
-    """
-    return (FIRST_DATE + datetime.timedelta(
-        days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)).strftime('%Y-%m-%d')
-
-
-def get_cell_begin_time(cell, appointment_type):
-    """
-    Determines the begin time of a cell.
-    :param cell: the cell
-    :param appointment_type: the appointment type of the cell.
-    :return: a date and time (properly formatted for Google).
-    """
-    date = get_date(cell)
-
-    if appointment_type is AppointmentType.CAMPUS:
-        return date + 'T' + BEGIN_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00'
-    else:
-        return date + 'T' + BEGIN_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00'
-
-
-def get_cell_end_time(cell, appointment_type, ws):
-    """
-    Determines the end time of a cell (range).
-    :param cell: the start cell.
-    :param appointment_type: the appointment type of the cell.
-    :param ws: the worksheet.
-    :return: a date and time (properly formatted for Google).
-    """
-    date = get_date(cell)
-
-    cell_range = get_merged_range(cell, ws)
-    if cell_range:
-        cell = get_last_in_range(cell_range, ws)
-
-    if appointment_type is AppointmentType.CAMPUS:
-        return date + 'T' + END_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00'
-    else:
-        return date + 'T' + END_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00'
