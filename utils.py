@@ -1,7 +1,3 @@
-"""
-Utility file of calendar-sync. Originally written by
-Julian van Doorn <jvdoorn@antarc.com>.
-"""
 import os
 import pickle
 
@@ -16,12 +12,6 @@ from config import *
 
 
 def get_merged_range(cell, ws):
-    """
-    Attempts to find a merged cell which contains the specified cell.
-    :param cell: the cell to check.
-    :param ws: the worksheet.
-    :return: a merged cell range or None.
-    """
     for cell_range in ws.merged_cells.ranges:
         if cell.coordinate in cell_range:
             return cell_range
@@ -29,23 +19,10 @@ def get_merged_range(cell, ws):
 
 
 def get_last_in_range(cell_range, ws):
-    """
-    Determines the last cell in a cell range.
-    :param cell_range: a cell range.
-    :param ws: the worksheet.
-    :return: the last cell in the cell range.
-    """
     return Cell(ws, row=cell_range.max_row, column=cell_range.max_col)
 
 
 def get_next_cell(cell, ws, check_merged=True):
-    """
-    Determines the next cell which we need to parse.
-    :param cell: the current cell.
-    :param ws: the worksheet.
-    :param check_merged: whether we should check if the cell is merged.
-    :return: the next cell or None if this was the last cell.
-    """
     if cell.row == LAST_ROW and cell.column == LAST_COLUMN:
         return None
 
@@ -60,18 +37,11 @@ def get_next_cell(cell, ws, check_merged=True):
 
 
 def get_credentials():
-    """
-    Attempts to load the credentials from file or generates new ones.
-    :return: the credentials to authenticate with Google.
-    """
     credentials = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
+
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
             credentials = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
@@ -79,7 +49,6 @@ def get_credentials():
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
             credentials = flow.run_local_server(port=0)
-        # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:
             pickle.dump(credentials, token)
 
@@ -167,10 +136,7 @@ def update_end_time(previous_appointment, new_end_time):
 
 def create_appointment(calendar, appointment):
     try:
-        # Create the event
-        event = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(
-            num_retries=10)
-        # Let the user know we created a new event
+        event = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(num_retries=10)
         print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
         return event.get('id')
     except Exception as e:
@@ -180,20 +146,13 @@ def create_appointment(calendar, appointment):
 
 def delete_appointment(calendar, event_id):
     try:
-        # Delete the old event
         calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id).execute(num_retries=10)
-        # Let the user know we deleted an event
         print(f'Deleted event with uid {event_id}.')
     except Exception as e:
         print(f'Error deleting event with uid {event_id}: {e}.')
 
 
 def get_cell_type(cell):
-    """
-    Determines the appointment type of a cell based on its color.
-    :param cell: a cell in the worksheet.
-    :return: the appointment type.
-    """
     if cell.value is None:
         return AppointmentType.EMPTY
 
@@ -212,24 +171,13 @@ def get_cell_type(cell):
         return AppointmentType.EMPTY
 
 
-def get_date(cell):
-    """
-    Determines the date of a cell.
-    :param cell: the cell.
-    :return: a String containing the date (properly formatted for Google).
-    """
+def get_cell_date(cell):
     return (FIRST_DATE + datetime.timedelta(
-        days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)).strftime('%Y-%m-%d')
+        days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)).strftime(DATE_FORMAT)
 
 
 def get_cell_begin_time(cell, appointment_type):
-    """
-    Determines the begin time of a cell.
-    :param cell: the cell
-    :param appointment_type: the appointment type of the cell.
-    :return: a date and time (properly formatted for Google).
-    """
-    date = get_date(cell)
+    date = get_cell_date(cell)
 
     if appointment_type is AppointmentType.CAMPUS:
         return date + 'T' + BEGIN_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00'
@@ -238,14 +186,7 @@ def get_cell_begin_time(cell, appointment_type):
 
 
 def get_cell_end_time(cell, appointment_type, ws):
-    """
-    Determines the end time of a cell (range).
-    :param cell: the start cell.
-    :param appointment_type: the appointment type of the cell.
-    :param ws: the worksheet.
-    :return: a date and time (properly formatted for Google).
-    """
-    date = get_date(cell)
+    date = get_cell_date(cell)
 
     cell_range = get_merged_range(cell, ws)
     if cell_range:

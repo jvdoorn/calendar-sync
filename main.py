@@ -1,8 +1,3 @@
-"""
-Main file of calendar-sync. Originally written by
-Julian van Doorn <jvdoorn@antarc.com>.
-"""
-
 from utils import *
 
 

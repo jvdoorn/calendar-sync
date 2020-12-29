@@ -1,8 +1,3 @@
-"""
-Config file of calendar-sync. Originally written by
-Julian van Doorn <jvdoorn@antarc.com>.
-"""
-
 import datetime
 
 from openpyxl.utils import column_index_from_string
@@ -29,3 +24,7 @@ CAMPUS_LOCATION = "Niels Bohrweg 2\n2333 CA Leiden\nNetherlands"
 STORAGE_FILE = 'storage'
 
 TIME_ZONE = 'Europe/Amsterdam'
+
+DATE_FORMAT: str = '%Y-%m-%d'
+TIME_FORMAT: str = '%H:%M:%S'
+DATE_TIME_FORMAT: str = DATE_FORMAT + 'T' + TIME_FORMAT
