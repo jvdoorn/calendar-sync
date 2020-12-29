@@ -60,7 +60,7 @@ def get_calendar_service():
     return get_service('calendar', 'v3', credentials=credentials)
 
 
-def load_cached_appointments_from_disk():
+def get_stored_appointments():
     stored_appointments = {}
 
     if os.path.exists(STORAGE_FILE):
@@ -72,7 +72,7 @@ def load_cached_appointments_from_disk():
     return stored_appointments
 
 
-def load_appointments_from_workbook() -> list:
+def get_appointments_from_workbook() -> list:
     workbook = load_workbook_from_disk()
     current_cell = get_first_cell(workbook)
 
