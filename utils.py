@@ -26,8 +26,8 @@ def get_next_cell(cell, ws, check_merged=True):
     if cell.row == LAST_ROW and cell.column == LAST_COLUMN:
         return None
 
-    cell_range = get_merged_range(cell, ws)
-    if cell_range and check_merged:
+    cell_range = get_merged_range(cell, ws) if check_merged else None
+    if cell_range:
         return get_next_cell(get_last_in_range(cell_range, ws), ws, False)
     else:
         if cell.column == LAST_COLUMN:
