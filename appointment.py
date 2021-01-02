@@ -1,5 +1,5 @@
+import datetime
 import hashlib
-from datetime import datetime
 from enum import Enum
 from typing import Union
 
@@ -38,8 +38,11 @@ class Appointment:
 
     def get_formatted_end_time(self) -> dict:
         if self._is_all_day():
+            # Add one day - Google treats the end date as 'up to' and not as 'up to and including'. Causes issues for
+            # multi-day events (such as holidays). This fix does not affect single day events.
+            timestamp = self.appointment_end_time + datetime.timedelta(days=1)
             return {
-                'date': self.appointment_end_time.strftime(DATE_FORMAT),
+                'date': timestamp.strftime(DATE_FORMAT),
                 'timeZone': TIME_ZONE,
             }
         else:
