@@ -1,14 +1,18 @@
 import hashlib
+from datetime import datetime
 from enum import Enum
 from typing import Union
 
-from config import CAMPUS_LOCATION, EXAMS_ALL_DAY, TIME_ZONE
+from config import CAMPUS_LOCATION, DATE_FORMAT, DATE_TIME_FORMAT, EXAMS_ALL_DAY, TIME_ZONE
 
 
 class Appointment:
-    def __init__(self, title, appointment_type, appointment_begin_time, appointment_end_time):
+    def __init__(self, title: str, appointment_type: str, appointment_begin_time: datetime,
+                 appointment_end_time: datetime):
         self.title = title
+
         self.appointment_type = appointment_type
+
         self.appointment_begin_time = appointment_begin_time
         self.appointment_end_time = appointment_end_time
 
@@ -23,24 +27,24 @@ class Appointment:
     def get_formatted_begin_time(self) -> dict:
         if self._is_all_day():
             return {
-                'date': self.appointment_begin_time.split('T')[0],
+                'date': self.appointment_begin_time.strftime(DATE_FORMAT),
                 'timeZone': TIME_ZONE,
             }
         else:
             return {
-                'dateTime': self.appointment_begin_time,
+                'dateTime': self.appointment_begin_time.strftime(DATE_TIME_FORMAT),
                 'timeZone': TIME_ZONE,
             }
 
     def get_formatted_end_time(self) -> dict:
         if self._is_all_day():
             return {
-                'date': self.appointment_end_time.split('T')[0],
+                'date': self.appointment_end_time.strftime(DATE_FORMAT),
                 'timeZone': TIME_ZONE,
             }
         else:
             return {
-                'dateTime': self.appointment_end_time,
+                'dateTime': self.appointment_end_time.strftime(DATE_TIME_FORMAT),
                 'timeZone': TIME_ZONE,
             }
 

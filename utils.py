@@ -85,6 +85,7 @@ def get_appointments_from_workbook() -> list:
 
         if len(titles) > 0:
             cell_type = get_cell_type(workbook[current_cell.coordinate])
+
             cell_begin_time = get_cell_begin_time(current_cell, cell_type)
             cell_end_time = get_cell_end_time(current_cell, cell_type, workbook)
 
@@ -172,27 +173,26 @@ def get_cell_type(cell):
 
 
 def get_cell_date(cell):
-    return (FIRST_DATE + datetime.timedelta(
-        days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)).strftime(DATE_FORMAT)
+    return FIRST_DATE + datetime.timedelta(days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)
 
 
 def get_cell_begin_time(cell, appointment_type):
-    date = get_cell_date(cell)
+    timestamp = get_cell_date(cell)
 
-    if appointment_type is AppointmentType.CAMPUS:
-        return date + 'T' + BEGIN_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00'
-    else:
-        return date + 'T' + BEGIN_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00'
+    index = (cell.column - FIRST_COLUMN) % 9
+    time = BEGIN_TIMES_CAMPUS[index] if appointment_type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
+
+    return timestamp.replace(hour=time[0], minute=time[1])
 
 
 def get_cell_end_time(cell, appointment_type, ws):
-    date = get_cell_date(cell)
-
     cell_range = get_merged_range(cell, ws)
     if cell_range:
         cell = get_last_in_range(cell_range, ws)
 
-    if appointment_type is AppointmentType.CAMPUS:
-        return date + 'T' + END_TIMES_CAMPUS[(cell.column - FIRST_COLUMN) % 9] + ':00'
-    else:
-        return date + 'T' + END_TIMES_ONLINE[(cell.column - FIRST_COLUMN) % 9] + ':00'
+    timestamp = get_cell_date(cell)
+
+    index = (cell.column - FIRST_COLUMN) % 9
+    time = END_TIMES_CAMPUS[index] if appointment_type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
+
+    return timestamp.replace(hour=time[0], minute=time[1])
