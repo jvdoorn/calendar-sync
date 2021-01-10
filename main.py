@@ -1,13 +1,15 @@
 from arguments import parser
+from schedule import Schedule
 from utils import *
 
 
 def main(dry: bool = False):
     calendar = get_calendar_service() if not dry else None
+    schedule = Schedule(SCHEDULE)
 
     remote_appointments: dict = get_stored_appointments()
     local_appointments: dict = {}
-    appointments_in_workbook: list = get_appointments_from_workbook()
+    appointments_in_workbook: list = schedule.get_appointments_from_workbook()
 
     for appointment in appointments_in_workbook:
         checksum = appointment.checksum()
