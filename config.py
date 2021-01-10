@@ -4,7 +4,7 @@ from openpyxl.utils import column_index_from_string
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-SCHEDULE = '/Users/julian/OneDrive - Universiteit Leiden/rooster.xlsx'
+SCHEDULE = '/Users/julian/Dropbox/University/rooster.xlsx'
 CALENDAR_ID = 'u2ljfs69g7h26gj5dufjelonn0@group.calendar.google.com'
 
 BEGIN_TIMES_CAMPUS = [(9, 00), (10, 00), (11, 00), (12, 00), (13, 30), (14, 30), (15, 30), (16, 30), (17, 30)]
