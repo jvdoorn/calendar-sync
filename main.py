@@ -23,16 +23,13 @@ def main(dry: bool = False):
             else:
                 print("Would create an new event " + appointment.title)
 
-    for uid in remote_appointments.values():
-        if not dry:
-            delete_appointment(calendar, uid)
-        else:
-            print("Would delete an event " + uid)
+    events_to_be_deleted = list(remote_appointments.values())
 
     if not dry:
-        with open(STORAGE_FILE, 'w') as f:
-            for checksum, uid in local_appointments.items():
-                f.write(f'{checksum} {uid}\n')
+        delete_remote_appointments(events_to_be_deleted, calendar)
+        save_appointments_to_cache(local_appointments)
+    else:
+        print(f"Would delete {len(events_to_be_deleted)} event(s).")
 
 
 if __name__ == '__main__':

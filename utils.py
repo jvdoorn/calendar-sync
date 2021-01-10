@@ -72,6 +72,17 @@ def get_stored_appointments():
     return stored_appointments
 
 
+def save_appointments_to_cache(appointments: dict):
+    with open(STORAGE_FILE, 'w') as f:
+        for checksum, uid in appointments.items():
+            f.write(f'{checksum} {uid}\n')
+
+
+def delete_remote_appointments(uids: list, calendar):
+    for uid in uids:
+        delete_appointment(calendar, uid)
+
+
 def get_appointments_from_workbook() -> list:
     workbook = load_workbook_from_disk()
     current_cell = get_first_cell(workbook)
