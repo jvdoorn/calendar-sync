@@ -14,6 +14,18 @@ class Schedule:
     def __init__(self, file: str):
         self._workbook = load_workbook(file).active
 
+    def __iter__(self):
+        self._current_cell = self.get_first_cell()
+        return self
+
+    def __next__(self):
+        current_cell = self._current_cell
+        if current_cell is None:
+            raise StopIteration
+        else:
+            self._current_cell = self.get_next_cell(self._current_cell)
+            return current_cell
+
     def get_merged_range(self, cell):
         for cell_range in self._workbook.merged_cells.ranges:
             if cell.coordinate in cell_range:
@@ -37,20 +49,18 @@ class Schedule:
                 return Cell(self._workbook, row=cell.row, column=cell.col_idx + 1)
 
     def get_appointments_from_workbook(self) -> list:
-        current_cell = self.get_first_cell()
-
         appointments_in_workbook: list = []
         previous_appointments: list = []
 
-        while current_cell:
+        for cell in iter(self):
             appointments_in_cell = []
-            titles = self.get_appointment_titles_from_cell(current_cell)
+            titles = self.get_appointment_titles_from_cell(cell)
 
             if len(titles) > 0:
-                cell_type = self.get_cell_type(self._workbook[current_cell.coordinate])
+                cell_type = self.get_cell_type(self._workbook[cell.coordinate])
 
-                cell_begin_time = self.get_cell_begin_time(current_cell, cell_type)
-                cell_end_time = self.get_cell_end_time(current_cell, cell_type)
+                cell_begin_time = self.get_cell_begin_time(cell, cell_type)
+                cell_end_time = self.get_cell_end_time(cell, cell_type)
 
                 for title in titles:
                     match_with_previous_appointment = False
@@ -71,13 +81,7 @@ class Schedule:
             appointments_in_workbook += previous_appointments
             previous_appointments = appointments_in_cell
 
-            next_cell = self.get_next_cell(current_cell)
-
-            if next_cell is None:
-                appointments_in_workbook += appointments_in_cell
-
-            current_cell = next_cell
-
+        appointments_in_workbook += previous_appointments
         return appointments_in_workbook
 
     def get_first_cell(self):
