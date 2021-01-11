@@ -15,16 +15,16 @@ class Schedule:
         self._workbook = load_workbook(file).active
 
     def __iter__(self):
-        self._current_cell = self.get_first_cell()
+        self._iteration_cell = self.get_first_cell()
         return self
 
     def __next__(self):
-        current_cell = self._current_cell
-        if current_cell is None:
+        if self._iteration_cell is None:
             raise StopIteration
-        else:
-            self._current_cell = self.get_next_cell(self._current_cell)
-            return current_cell
+
+        current_cell = self._iteration_cell
+        self._iteration_cell = self.get_next_cell(self._iteration_cell)
+        return current_cell
 
     def get_merged_range(self, cell):
         for cell_range in self._workbook.merged_cells.ranges:
