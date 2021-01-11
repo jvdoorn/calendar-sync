@@ -11,6 +11,8 @@ def main(dry: bool = False):
     local_appointments: dict = {}
     appointments_in_workbook: list = schedule.get_appointments_from_workbook()
 
+    created_event_count = 0
+
     for appointment in appointments_in_workbook:
         checksum = appointment.checksum()
 
@@ -18,12 +20,14 @@ def main(dry: bool = False):
             local_appointments[checksum] = remote_appointments[checksum]
             remote_appointments.pop(appointment.checksum())
         else:
+            created_event_count += 1
+
             if not dry:
                 event_id = create_appointment(calendar, appointment)
                 if event_id is not None:
                     local_appointments[appointment.checksum()] = event_id
             else:
-                print("Would create an new event " + appointment.title)
+                print(f"Would create an new event {appointment.title} ({appointment.appointment_begin_time} - {appointment.appointment_end_time}).")
 
     events_to_be_deleted = list(remote_appointments.values())
 
@@ -31,7 +35,8 @@ def main(dry: bool = False):
         delete_remote_appointments(events_to_be_deleted, calendar)
         save_appointments_to_cache(local_appointments)
     else:
-        print(f"Would delete {len(events_to_be_deleted)} event(s).")
+        print(f"Would create {created_event_count} event(s) in total.")
+        print(f"Would delete {len(events_to_be_deleted)} event(s) in total.")
 
 
 if __name__ == '__main__':
