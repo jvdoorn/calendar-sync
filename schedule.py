@@ -6,7 +6,6 @@ from openpyxl.cell import MergedCell
 from appointment import Appointment, AppointmentType
 from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, FIRST_DATE, \
     FIRST_ROW
-from utils import update_end_time
 
 
 def get_type(cell):
@@ -48,38 +47,52 @@ class Schedule:
     def __init__(self, file: str):
         self._worksheet = load_workbook(file).active
 
+    def __iter__(self):
+        rows = self._worksheet.iter_rows(min_row=FIRST_ROW, min_col=FIRST_COLUMN)
+        self._cells = [cell for row in rows for cell in row]
+        self._iterator_index = 0
+        return self
+
+    def __next__(self):
+        if self._iterator_index == len(self._cells):
+            raise StopIteration
+
+        current_index = self._iterator_index
+        self._iterator_index += 1
+        return self._cells[current_index]
+
     def get_appointments_from_workbook(self) -> list:
         appointments_in_workbook: list = []
         previous_appointments: list = []
 
-        for row in self._worksheet.iter_rows(min_row=FIRST_ROW, min_col=FIRST_COLUMN):
-            for cell in row:
-                if isinstance(cell, MergedCell):
-                    for appointment in previous_appointments:
-                        appointment.appointment_end_time = get_end_time(cell, appointment.appointment_type)
-                else:
-                    appointments_in_cell = []
+        for cell in iter(self):
+            if isinstance(cell, MergedCell):
+                for appointment in previous_appointments:
+                    appointment.appointment_end_time = get_end_time(cell, appointment.appointment_type)
+            else:
+                appointments_in_cell = []
 
-                    for title in ([] if cell.value is None else cell.value.split(' / ')):
-                        match_with_previous_appointment = False
+                for title in ([] if cell.value is None else cell.value.split(' / ')):
+                    match_with_previous_appointment = False
 
-                        for i in range(len(previous_appointments)):
-                            previous_appointment = previous_appointments[i]
+                    for i in range(len(previous_appointments)):
+                        previous_appointment = previous_appointments[i]
 
-                            if title == previous_appointment.title:
-                                update_end_time(previous_appointment, get_end_time(cell))
-                                appointments_in_cell.append(previous_appointment)
-                                previous_appointments.pop(i)
-                                match_with_previous_appointment = True
-                                break
+                        if title == previous_appointment.title:
+                            previous_appointment.appointment_end_time = get_end_time(cell,
+                                                                                     previous_appointment.appointment_type)
+                            appointments_in_cell.append(previous_appointment)
+                            previous_appointments.pop(i)
+                            match_with_previous_appointment = True
+                            break
 
-                        if not match_with_previous_appointment:
-                            new_appointment = Appointment(title, get_type(cell), get_begin_time(cell),
-                                                          get_end_time(cell))
-                            appointments_in_cell.append(new_appointment)
+                    if not match_with_previous_appointment:
+                        new_appointment = Appointment(title, get_type(cell), get_begin_time(cell),
+                                                      get_end_time(cell))
+                        appointments_in_cell.append(new_appointment)
 
-                    appointments_in_workbook += previous_appointments
-                    previous_appointments = appointments_in_cell
+                appointments_in_workbook += previous_appointments
+                previous_appointments = appointments_in_cell
 
         appointments_in_workbook += previous_appointments
         return appointments_in_workbook
