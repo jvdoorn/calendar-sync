@@ -2,12 +2,89 @@ import datetime
 
 from openpyxl import load_workbook
 from openpyxl.cell import Cell
+from openpyxl.utils import get_column_letter
 
 from appointment import Appointment, AppointmentType
 from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, FIRST_DATE, \
-    FIRST_ROW, \
-    LAST_COLUMN, LAST_ROW
+    FIRST_ROW, LAST_COLUMN, LAST_ROW
 from utils import update_end_time
+
+
+class ScheduleCell:
+    def __init__(self, workbook, col, row):
+        self._workbook = workbook
+
+        self._col_min = self._col_max = col
+        self._row_min = self._row_max = row
+
+        for cell_range in self._workbook.merged_cells.ranges:
+            if self.coordinate in cell_range:
+                self._col_max = cell_range.max_col
+                self._row_max = cell_range.max_row
+                break
+
+    def __next__(self):
+        if self._col_max == LAST_COLUMN:
+            if self._row_max == LAST_ROW:
+                return None
+            return ScheduleCell(self._workbook, FIRST_COLUMN, self._row_max + 1)
+        else:
+            return ScheduleCell(self._workbook, self._col_max + 1, self._row_max)
+
+    @property
+    def _cell(self):
+        return Cell(self._workbook, row=self._row_min, column=self._col_min)
+
+    @property
+    def value(self) -> str:
+        return self._cell.value
+
+    @property
+    def titles(self) -> list:
+        return [] if self.value is None else self.value.split(' / ')
+
+    @property
+    def coordinate(self) -> str:
+        letter = get_column_letter(self._col_min)
+        return f'{letter}{self._row_min}'
+
+    @property
+    def type(self):
+        if self.value is None:
+            return AppointmentType.EMPTY
+
+        color = self._cell.fill.fgColor
+
+        if str(color.rgb) == 'FF5B9BD5' or color.theme == 8:
+            return AppointmentType.CAMPUS
+        elif color.theme == 5:
+            return AppointmentType.EXAM
+        elif str(color.rgb) == '00000000':
+            return AppointmentType.ONLINE
+        elif str(color.rgb) == 'FFFFC000' or color.theme == 7:
+            return AppointmentType.HOLIDAY
+        else:
+            print(f'WARNING: failed to determine appointment type for {self.value} with color {color}.')
+            return AppointmentType.EMPTY
+
+    @property
+    def date(self):
+        return FIRST_DATE + datetime.timedelta(
+            days=(self._row_min - FIRST_ROW) * 7 + (self._col_min - FIRST_COLUMN) // 9)
+
+    @property
+    def begin_time(self):
+        index = (self._col_min - FIRST_COLUMN) % 9
+        time = BEGIN_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
+
+        return self.date.replace(hour=time[0], minute=time[1])
+
+    @property
+    def end_time(self):
+        index = (self._col_max - FIRST_COLUMN) % 9
+        time = END_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
+
+        return self.date.replace(hour=time[0], minute=time[1])
 
 
 class Schedule:
