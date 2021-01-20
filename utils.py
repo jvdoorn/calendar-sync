@@ -61,7 +61,7 @@ def load_workbook_from_disk():
 
 
 def update_end_time(previous_appointment, new_end_time):
-    previous_appointment.appointment_end_time = new_end_time
+    previous_appointment.end_time = new_end_time
 
 
 def create_appointment(calendar, appointment):

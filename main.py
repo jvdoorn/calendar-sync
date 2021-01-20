@@ -14,20 +14,20 @@ def main(dry: bool = False):
     created_event_count = 0
 
     for appointment in appointments_in_workbook:
-        checksum = appointment.checksum()
+        checksum = appointment.checksum
 
         if checksum in remote_appointments:
             local_appointments[checksum] = remote_appointments[checksum]
-            remote_appointments.pop(appointment.checksum())
+            remote_appointments.pop(appointment.checksum)
         else:
             created_event_count += 1
 
             if not dry:
                 event_id = create_appointment(calendar, appointment)
                 if event_id is not None:
-                    local_appointments[appointment.checksum()] = event_id
+                    local_appointments[appointment.checksum] = event_id
             else:
-                print(f"Would create an new event {appointment.title} ({appointment.appointment_begin_time} - {appointment.appointment_end_time}).")
+                print(f"Would create an new event {appointment.title} ({appointment.begin_time} - {appointment.end_time}).")
 
     events_to_be_deleted = list(remote_appointments.values())
 

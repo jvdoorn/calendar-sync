@@ -3,6 +3,7 @@ from typing import List, Union
 
 from openpyxl import load_workbook
 from openpyxl.cell import Cell, MergedCell
+from openpyxl.styles.colors import Color
 
 from appointment import Appointment, AppointmentType
 from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, FIRST_DATE, \
@@ -11,29 +12,38 @@ from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END
 
 class ScheduleCell:
     def __init__(self, parent_cell: Cell):
-        self._parent_cell = parent_cell
+        self._parent_cell: Cell = parent_cell
 
-        self.last_column = parent_cell.column
-        self.last_row = parent_cell.row
+        self.last_column: int = parent_cell.column
+        self.last_row: int = parent_cell.row
 
     @property
-    def type(self):
-        color = self._parent_cell.fill.fgColor
+    def first_column(self) -> int:
+        return self._parent_cell.column
 
-        if str(self.color.rgb) == 'FF5B9BD5' or color.theme == 8:
+    @property
+    def first_row(self) -> int:
+        return self._parent_cell.row
+
+    @property
+    def type(self) -> AppointmentType:
+        theme = self.color.theme
+        rgb = str(self.color.rgb)
+
+        if rgb == 'FF5B9BD5' or theme == 8:
             return AppointmentType.CAMPUS
         elif self.color.theme == 5:
             return AppointmentType.EXAM
-        elif str(self.color.rgb) == '00000000':
+        elif rgb == '00000000':
             return AppointmentType.ONLINE
-        elif str(self.color.rgb) == 'FFFFC000' or color.theme == 7:
+        elif rgb == 'FFFFC000' or theme == 7:
             return AppointmentType.HOLIDAY
         else:
             print(f'WARNING: failed to determine appointment get_type for {self.value} with color {self.color}.')
             return AppointmentType.EMPTY
 
     @property
-    def color(self):
+    def color(self) -> Color:
         return self._parent_cell.fill.fgColor
 
     @property
@@ -45,19 +55,19 @@ class ScheduleCell:
         return [] if self.value is None else self.value.split(' / ')
 
     @property
-    def date(self):
+    def date(self) -> datetime.datetime:
         return FIRST_DATE + datetime.timedelta(
-            days=(self._parent_cell.row - FIRST_ROW) * 7 + (self._parent_cell.column - FIRST_COLUMN) // 9)
+            days=(self.first_row - FIRST_ROW) * 7 + (self.first_column - FIRST_COLUMN) // 9)
 
     @property
-    def begin_time(self):
-        index = (self._parent_cell.column - FIRST_COLUMN) % 9
+    def begin_time(self) -> datetime.datetime:
+        index = (self.first_column - FIRST_COLUMN) % 9
         time = BEGIN_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
 
         return self.date.replace(hour=time[0], minute=time[1])
 
     @property
-    def end_time(self):
+    def end_time(self) -> datetime.datetime:
         index = (self.last_column - FIRST_COLUMN) % 9
         time = END_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
 
@@ -108,9 +118,9 @@ class Schedule:
                 appointment: Union[Appointment, None] = None
 
                 for previous_appointment in previous_appointments:
-                    if previous_appointment.title == title and previous_appointment.appointment_type == cell.type:
+                    if previous_appointment.title == title and previous_appointment.type == cell.type:
                         appointment = previous_appointment
-                        appointment.appointment_end_time = cell.end_time
+                        appointment.end_time = cell.end_time
 
                         previous_appointments.remove(previous_appointment)
                         break
