@@ -1,46 +1,67 @@
 import datetime
+from typing import List, Union
 
 from openpyxl import load_workbook
-from openpyxl.cell import MergedCell
+from openpyxl.cell import Cell, MergedCell
 
 from appointment import Appointment, AppointmentType
 from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, FIRST_DATE, \
     FIRST_ROW
 
 
-def get_type(cell):
-    color = cell.fill.fgColor
+class ScheduleCell:
+    def __init__(self, parent_cell: Cell):
+        self._parent_cell = parent_cell
 
-    if str(color.rgb) == 'FF5B9BD5' or color.theme == 8:
-        return AppointmentType.CAMPUS
-    elif color.theme == 5:
-        return AppointmentType.EXAM
-    elif str(color.rgb) == '00000000':
-        return AppointmentType.ONLINE
-    elif str(color.rgb) == 'FFFFC000' or color.theme == 7:
-        return AppointmentType.HOLIDAY
-    else:
-        print(f'WARNING: failed to determine appointment get_type for {cell.value} with color {color}.')
-        return AppointmentType.EMPTY
+        self.last_column = parent_cell.column
+        self.last_row = parent_cell.row
 
+    @property
+    def type(self):
+        color = self._parent_cell.fill.fgColor
 
-def get_date(cell):
-    return FIRST_DATE + datetime.timedelta(days=(cell.row - FIRST_ROW) * 7 + (cell.column - FIRST_COLUMN) // 9)
+        if str(self.color.rgb) == 'FF5B9BD5' or color.theme == 8:
+            return AppointmentType.CAMPUS
+        elif self.color.theme == 5:
+            return AppointmentType.EXAM
+        elif str(self.color.rgb) == '00000000':
+            return AppointmentType.ONLINE
+        elif str(self.color.rgb) == 'FFFFC000' or color.theme == 7:
+            return AppointmentType.HOLIDAY
+        else:
+            print(f'WARNING: failed to determine appointment get_type for {self.value} with color {self.color}.')
+            return AppointmentType.EMPTY
 
+    @property
+    def color(self):
+        return self._parent_cell.fill.fgColor
 
-def get_begin_time(cell):
-    index = (cell.column - FIRST_COLUMN) % 9
-    time = BEGIN_TIMES_CAMPUS[index] if get_type(cell) is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
+    @property
+    def value(self):
+        return self._parent_cell.value
 
-    return get_date(cell).replace(hour=time[0], minute=time[1])
+    @property
+    def titles(self):
+        return [] if self.value is None else self.value.split(' / ')
 
+    @property
+    def date(self):
+        return FIRST_DATE + datetime.timedelta(
+            days=(self._parent_cell.row - FIRST_ROW) * 7 + (self._parent_cell.column - FIRST_COLUMN) // 9)
 
-def get_end_time(cell, cell_type=None):
-    index = (cell.column - FIRST_COLUMN) % 9
-    cell_type = cell_type if cell_type else get_type(cell)
-    time = END_TIMES_CAMPUS[index] if cell_type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
+    @property
+    def begin_time(self):
+        index = (self._parent_cell.column - FIRST_COLUMN) % 9
+        time = BEGIN_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
 
-    return get_date(cell).replace(hour=time[0], minute=time[1])
+        return self.date.replace(hour=time[0], minute=time[1])
+
+    @property
+    def end_time(self):
+        index = (self.last_column - FIRST_COLUMN) % 9
+        time = END_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
+
+        return self.date.replace(hour=time[0], minute=time[1])
 
 
 class Schedule:
@@ -48,51 +69,59 @@ class Schedule:
         self._worksheet = load_workbook(file).active
 
     def __iter__(self):
-        rows = self._worksheet.iter_rows(min_row=FIRST_ROW, min_col=FIRST_COLUMN)
-        self._cells = [cell for row in rows for cell in row]
+        self._cells = [cell for row in self.rows for cell in row]
+        self._current_schedule_cell = ScheduleCell(self._cells[0])
         self._iterator_index = 0
         return self
 
-    def __next__(self):
-        if self._iterator_index == len(self._cells):
+    @property
+    def rows(self):
+        return self._worksheet.iter_rows(min_row=FIRST_ROW, min_col=FIRST_COLUMN)
+
+    def __next__(self) -> ScheduleCell:
+        if self._iterator_index == len(self._cells) - 1:
             raise StopIteration
 
-        current_index = self._iterator_index
-        self._iterator_index += 1
-        return self._cells[current_index]
+        next_index = self._iterator_index + 1
+        next_cell = self._cells[next_index]
 
-    def get_appointments_from_workbook(self) -> list:
-        appointments_in_workbook: list = []
-        previous_appointments: list = []
+        self._iterator_index = next_index
 
+        if isinstance(next_cell, MergedCell):
+            self._current_schedule_cell.last_column = next_cell.column
+            self._current_schedule_cell.last_row = next_cell.row
+
+            return self.__next__()
+        else:
+            current_cell = self._current_schedule_cell
+            self._current_schedule_cell = ScheduleCell(next_cell)
+            return current_cell
+
+    def get_appointments_from_workbook(self) -> List[Appointment]:
+        appointments_in_workbook: List[Appointment] = []
+
+        previous_appointments: List[Appointment] = []
         for cell in iter(self):
-            if isinstance(cell, MergedCell):
-                for appointment in previous_appointments:
-                    appointment.appointment_end_time = get_end_time(cell, appointment.appointment_type)
-            else:
-                appointments_in_cell = []
+            current_appointments: List[Appointment] = []
 
-                for title in ([] if cell.value is None else cell.value.split(' / ')):
-                    match_with_previous_appointment = False
+            for title in cell.titles:
+                appointment: Union[Appointment, None] = None
 
-                    for i in range(len(previous_appointments)):
-                        previous_appointment = previous_appointments[i]
+                for previous_appointment in previous_appointments:
+                    if previous_appointment.title == title and previous_appointment.appointment_type == cell.type:
+                        appointment = previous_appointment
+                        appointment.appointment_end_time = cell.end_time
 
-                        if title == previous_appointment.title:
-                            previous_appointment.appointment_end_time = get_end_time(cell,
-                                                                                     previous_appointment.appointment_type)
-                            appointments_in_cell.append(previous_appointment)
-                            previous_appointments.pop(i)
-                            match_with_previous_appointment = True
-                            break
+                        previous_appointments.remove(previous_appointment)
+                        break
 
-                    if not match_with_previous_appointment:
-                        new_appointment = Appointment(title, get_type(cell), get_begin_time(cell),
-                                                      get_end_time(cell))
-                        appointments_in_cell.append(new_appointment)
+                if appointment is None:
+                    appointment = Appointment(title, cell.type, cell.begin_time, cell.end_time)
 
-                appointments_in_workbook += previous_appointments
-                previous_appointments = appointments_in_cell
+                current_appointments.append(appointment)
+
+            appointments_in_workbook += previous_appointments
+            previous_appointments = current_appointments
 
         appointments_in_workbook += previous_appointments
         return appointments_in_workbook
