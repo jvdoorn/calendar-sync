@@ -81,7 +81,7 @@ class Schedule:
 
     def __iter__(self):
         self._cells = [cell for row in self.rows for cell in row]
-        self._current_schedule_cell = ScheduleCell(self._cells[0])
+        self._iterator_cell = ScheduleCell(self._cells[0])
         self._iterator_index = 0
         return self
 
@@ -90,22 +90,22 @@ class Schedule:
         return self._worksheet.iter_rows(min_row=FIRST_ROW, max_row=LAST_ROW, min_col=FIRST_COLUMN, max_col=LAST_COLUMN)
 
     def __next__(self) -> ScheduleCell:
-        if self._iterator_index == len(self._cells) - 1:
+        if self._iterator_index == len(self._cells):
             raise StopIteration
 
         next_index = self._iterator_index + 1
-        next_cell = self._cells[next_index]
+        next_cell: Union[None, Cell] = None if next_index == len(self._cells) else self._cells[next_index]
 
         self._iterator_index = next_index
 
         if isinstance(next_cell, MergedCell):
-            self._current_schedule_cell.last_column = next_cell.column
-            self._current_schedule_cell.last_row = next_cell.row
+            self._iterator_cell.last_column = next_cell.column
+            self._iterator_cell.last_row = next_cell.row
 
             return self.__next__()
         else:
-            current_cell = self._current_schedule_cell
-            self._current_schedule_cell = ScheduleCell(next_cell)
+            current_cell = self._iterator_cell
+            self._iterator_cell = None if next_cell is None else ScheduleCell(next_cell)
             return current_cell
 
     def get_appointments_from_workbook(self) -> List[Appointment]:
