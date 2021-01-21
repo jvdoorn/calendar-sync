@@ -67,10 +67,10 @@ def update_end_time(previous_appointment, new_end_time):
 def create_appointment(calendar, appointment):
     try:
         event = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(num_retries=10)
-        print(f'Created event with checksum {appointment.checksum()} and id {event.get("id")}')
+        print(f'Created event with checksum {appointment.checksum} and id {event.get("id")}')
         return event.get('id')
     except Exception as e:
-        print(f'Error creating event with checksum {appointment.checksum()}: {e}.')
+        print(f'Error creating event with checksum {appointment.checksum}: {e}.')
         return None
 
 
