@@ -7,7 +7,7 @@ from openpyxl.styles.colors import Color
 
 from appointment import Appointment, AppointmentType
 from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, FIRST_DATE, \
-    FIRST_ROW
+    FIRST_ROW, LAST_COLUMN, LAST_ROW
 
 
 class ScheduleCell:
@@ -16,6 +16,9 @@ class ScheduleCell:
 
         self.last_column: int = parent_cell.column
         self.last_row: int = parent_cell.row
+
+    def __str__(self):
+        return f'{self.titles} [{self._parent_cell.coordinate}]'
 
     @property
     def first_column(self) -> int:
@@ -55,23 +58,24 @@ class ScheduleCell:
         return [] if self.value is None else self.value.split(' / ')
 
     @property
-    def date(self) -> datetime.datetime:
-        return FIRST_DATE + datetime.timedelta(
-            days=(self.first_row - FIRST_ROW) * 7 + (self.first_column - FIRST_COLUMN) // 9)
-
-    @property
     def begin_time(self) -> datetime.datetime:
         index = (self.first_column - FIRST_COLUMN) % 9
+
+        date = FIRST_DATE + datetime.timedelta(
+            days=(self.first_row - FIRST_ROW) * 7 + (self.first_column - FIRST_COLUMN) // 9)
         time = BEGIN_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
 
-        return self.date.replace(hour=time[0], minute=time[1])
+        return date.replace(hour=time[0], minute=time[1])
 
     @property
     def end_time(self) -> datetime.datetime:
         index = (self.last_column - FIRST_COLUMN) % 9
+
+        date = FIRST_DATE + datetime.timedelta(
+            days=(self.last_row - FIRST_ROW) * 7 + (self.last_column - FIRST_COLUMN) // 9)
         time = END_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
 
-        return self.date.replace(hour=time[0], minute=time[1])
+        return date.replace(hour=time[0], minute=time[1])
 
 
 class Schedule:
@@ -86,7 +90,7 @@ class Schedule:
 
     @property
     def rows(self):
-        return self._worksheet.iter_rows(min_row=FIRST_ROW, min_col=FIRST_COLUMN)
+        return self._worksheet.iter_rows(min_row=FIRST_ROW, max_row=LAST_ROW, min_col=FIRST_COLUMN, max_col=LAST_COLUMN)
 
     def __next__(self) -> ScheduleCell:
         if self._iterator_index == len(self._cells) - 1:
@@ -112,6 +116,7 @@ class Schedule:
 
         previous_appointments: List[Appointment] = []
         for cell in iter(self):
+            print(cell)
             current_appointments: List[Appointment] = []
 
             for title in cell.titles:
