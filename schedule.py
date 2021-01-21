@@ -17,9 +17,6 @@ class ScheduleCell:
         self.last_column: int = parent_cell.column
         self.last_row: int = parent_cell.row
 
-    def __str__(self):
-        return f'{self.titles} [{self._parent_cell.coordinate}]'
-
     @property
     def first_column(self) -> int:
         return self._parent_cell.column
@@ -116,7 +113,6 @@ class Schedule:
 
         previous_appointments: List[Appointment] = []
         for cell in iter(self):
-            print(cell)
             current_appointments: List[Appointment] = []
 
             for title in cell.titles:
