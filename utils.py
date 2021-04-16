@@ -39,16 +39,22 @@ def get_stored_appointments():
     if os.path.exists(STORAGE_FILE):
         with open(STORAGE_FILE) as f:
             for line in f:
-                (checksum, uid) = line.split()
-                stored_appointments[checksum] = uid
+                try:
+                    (checksum, uid, date) = line.split()
+                except ValueError:
+                    checksum, uid, date = *line.split(), None
+
+                historic = False if not date else datetime.datetime.strptime(date,
+                                                                             DATE_FORMAT) < datetime.datetime.now()
+                stored_appointments[checksum] = (uid, historic)
 
     return stored_appointments
 
 
 def save_appointments_to_cache(appointments: dict):
     with open(STORAGE_FILE, 'w') as f:
-        for checksum, uid in appointments.items():
-            f.write(f'{checksum} {uid}\n')
+        for checksum, (uid, end_date) in appointments.items():
+            f.write(f'{checksum} {uid} {end_date}\n')
 
 
 def delete_remote_appointments(uids: list, calendar):
