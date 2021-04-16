@@ -18,6 +18,11 @@ class Appointment:
         self.begin_time: datetime = begin_time
         self.end_time: datetime = end_time
 
+        self.remote_event_id = None
+
+    def __str__(self):
+        return f"{self.title} ({self.begin_time} - {self.end_time})"
+
     @property
     def checksum(self) -> str:
         data = str(self.serialize()).encode()

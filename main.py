@@ -7,39 +7,38 @@ def main(dry: bool = False):
     calendar = get_calendar_service() if not dry else None
     schedule = Schedule(SCHEDULE)
 
-    remote_appointments: dict = get_stored_appointments()
-    local_appointments: dict = {}
-    appointments_in_workbook: list = schedule.get_appointments_from_workbook()
+    remote_appointments = get_stored_appointments()
+    schedule_appointments = schedule.get_appointments_from_workbook()
+
+    # local_appointments: dict = {}
 
     created_event_count = 0
 
-    for appointment in appointments_in_workbook:
+    for appointment in schedule_appointments:
         checksum = appointment.checksum
 
         if checksum in remote_appointments:
-            event_id, _ = remote_appointments[checksum]
-            local_appointments[checksum] = (event_id, appointment)
-            remote_appointments.pop(appointment.checksum)
+            event_id, historic = remote_appointments.pop(appointment.checksum)
+            appointment.remote_event_id = event_id
             continue
 
         if appointment.is_historic:
             continue
 
-        created_event_count += 1
-
         if not dry:
             event_id = create_appointment(calendar, appointment)
-            if event_id is not None:
-                local_appointments[appointment.checksum] = (event_id, appointment)
+            appointment.remote_event_id = event_id
         else:
-            print(
-                f"Would create an new event {appointment.title} ({appointment.begin_time} - {appointment.end_time}).")
+            print(f"Would create a new event {appointment}.")
+        created_event_count += 1
 
     events_to_be_deleted = [uid for uid, historic in remote_appointments.values() if not historic]
+    events_to_be_saved = [appointment for appointment in schedule_appointments if
+                          not appointment.is_historic and appointment.remote_event_id]
 
     if not dry:
         delete_remote_appointments(events_to_be_deleted, calendar)
-        save_appointments_to_cache(local_appointments)
+        save_appointments_to_cache(events_to_be_saved)
     else:
         print(f"Would create {created_event_count} event(s) in total.")
         print(f"Would delete {len(events_to_be_deleted)} event(s) in total.")

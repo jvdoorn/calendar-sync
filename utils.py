@@ -1,11 +1,13 @@
 import os
 import pickle
+from typing import Dict, List, Tuple
 
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build as get_service
 from openpyxl import load_workbook
 
+from appointment import Appointment
 from config import *
 
 
@@ -33,28 +35,33 @@ def get_calendar_service():
     return get_service('calendar', 'v3', credentials=credentials)
 
 
-def get_stored_appointments():
+def get_stored_appointments() -> Dict[str, Tuple[str, bool]]:
     stored_appointments = {}
 
-    if os.path.exists(STORAGE_FILE):
-        with open(STORAGE_FILE) as f:
-            for line in f:
-                try:
-                    (checksum, uid, date) = line.split()
-                except ValueError:
-                    checksum, uid, date = *line.split(), None
+    if not os.path.exists(STORAGE_FILE):
+        return stored_appointments
 
-                historic = False if not date else datetime.datetime.strptime(date,
-                                                                             DATE_FORMAT) < datetime.datetime.now()
-                stored_appointments[checksum] = (uid, historic)
+    with open(STORAGE_FILE) as storage:
+        for line in storage:
+            try:
+                (checksum, event_id, date) = line.split()
+            except ValueError:
+                checksum, event_id, date = *line.split(), None
 
+            try:
+                historic = datetime.datetime.strptime(date, DATE_FORMAT) < datetime.datetime.now()
+            except (AttributeError, TypeError):
+                historic = False
+
+            stored_appointments[checksum] = (event_id, historic)
     return stored_appointments
 
 
-def save_appointments_to_cache(appointments: dict):
+def save_appointments_to_cache(appointments: List[Appointment]):
     with open(STORAGE_FILE, 'w') as f:
-        for checksum, (uid, end_date) in appointments.items():
-            f.write(f'{checksum} {uid} {end_date}\n')
+        for appointment in appointments:
+            f.write(
+                f'{appointment.checksum} {appointment.remote_event_id} {appointment.end_time.strftime(DATE_FORMAT)}\n')
 
 
 def delete_remote_appointments(uids: list, calendar):
@@ -73,10 +80,10 @@ def update_end_time(previous_appointment, new_end_time):
 def create_appointment(calendar, appointment):
     try:
         event = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(num_retries=10)
-        print(f'Created event with checksum {appointment.checksum} and id {event.get("id")}')
+        print(f"Created a new event {appointment}.")
         return event.get('id')
     except Exception as e:
-        print(f'Error creating event with checksum {appointment.checksum}: {e}.')
+        print(f'Error creating event {appointment}: {e}.')
         return None
 
 
