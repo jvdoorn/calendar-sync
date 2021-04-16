@@ -14,25 +14,26 @@ def main(dry: bool = False):
     created_event_count = 0
 
     for appointment in appointments_in_workbook:
-        if appointment.is_historic:
-            continue
-
         checksum = appointment.checksum
 
         if checksum in remote_appointments:
             event_id, _ = remote_appointments[checksum]
             local_appointments[checksum] = (event_id, appointment)
             remote_appointments.pop(appointment.checksum)
-        else:
-            created_event_count += 1
+            continue
 
-            if not dry:
-                event_id = create_appointment(calendar, appointment)
-                if event_id is not None:
-                    local_appointments[appointment.checksum] = (event_id, appointment)
-            else:
-                print(
-                    f"Would create an new event {appointment.title} ({appointment.begin_time} - {appointment.end_time}).")
+        if appointment.is_historic:
+            continue
+
+        created_event_count += 1
+
+        if not dry:
+            event_id = create_appointment(calendar, appointment)
+            if event_id is not None:
+                local_appointments[appointment.checksum] = (event_id, appointment)
+        else:
+            print(
+                f"Would create an new event {appointment.title} ({appointment.begin_time} - {appointment.end_time}).")
 
     events_to_be_deleted = [uid for uid, historic in remote_appointments.values() if not historic]
 
