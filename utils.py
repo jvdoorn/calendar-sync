@@ -64,9 +64,9 @@ def save_appointments_to_cache(appointments: List[Appointment]):
                 f'{appointment.checksum} {appointment.remote_event_id} {appointment.end_time.strftime(DATE_FORMAT)}\n')
 
 
-def delete_remote_appointments(uids: list, calendar):
-    for uid in uids:
-        delete_appointment(calendar, uid)
+def delete_remote_appointments(event_ids: list, calendar):
+    for event_id in event_ids:
+        delete_appointment(calendar, event_id)
 
 
 def load_workbook_from_disk():
@@ -90,6 +90,6 @@ def create_appointment(calendar, appointment):
 def delete_appointment(calendar, event_id):
     try:
         calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id).execute(num_retries=10)
-        print(f'Deleted event with uid {event_id}.')
+        print(f'Deleted event with event ID {event_id}.')
     except Exception as e:
-        print(f'Error deleting event with uid {event_id}: {e}.')
+        print(f'Error deleting event with event ID {event_id}: {e}.')

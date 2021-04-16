@@ -10,8 +10,6 @@ def main(dry: bool = False):
     remote_appointments = get_stored_appointments()
     schedule_appointments = schedule.get_appointments_from_workbook()
 
-    # local_appointments: dict = {}
-
     created_event_count = 0
 
     for appointment in schedule_appointments:
@@ -32,7 +30,7 @@ def main(dry: bool = False):
             print(f"Would create a new event {appointment}.")
         created_event_count += 1
 
-    events_to_be_deleted = [uid for uid, historic in remote_appointments.values() if not historic]
+    events_to_be_deleted = [event_id for event_id, historic in remote_appointments.values() if not historic]
     events_to_be_saved = [appointment for appointment in schedule_appointments if
                           not appointment.is_historic and appointment.remote_event_id]
 
