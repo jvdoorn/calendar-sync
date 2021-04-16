@@ -57,6 +57,10 @@ class Appointment:
             }
 
     @property
+    def is_historic(self) -> bool:
+        return self.end_time < datetime.datetime.now()
+
+    @property
     def location(self) -> Union[str, None]:
         if self.type == AppointmentType.CAMPUS:
             return CAMPUS_LOCATION
