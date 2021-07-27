@@ -1,7 +1,5 @@
 from openpyxl.utils import column_index_from_string
 
-DATE_COLUMN = column_index_from_string('B')
-
 FIRST_SCHEDULE_ROW = 3
 FIRST_SCHEDULE_COLUMN = column_index_from_string('C')
 LAST_SCHEDULE_COLUMN = column_index_from_string('AU')

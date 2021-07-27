@@ -7,7 +7,7 @@ from openpyxl.styles.colors import Color
 from openpyxl.worksheet.worksheet import Worksheet
 
 from appointment import Appointment, AppointmentType
-from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE
+from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE
 from constants import FIRST_DATE_CELL, FIRST_SCHEDULE_COLUMN, FIRST_SCHEDULE_ROW, \
     LAST_SCHEDULE_COLUMN
 
@@ -42,7 +42,7 @@ class ScheduleCell:
         elif rgb == 'FFFFC000' or theme == 7:
             return AppointmentType.HOLIDAY
         else:
-            print(f'WARNING: failed to determine appointment get_type for {self.value} with color {self.color}.')
+            print(f'WARNING: failed to determine appointment type for {self.value} with color {self.color}.')
             return AppointmentType.EMPTY
 
     @property
@@ -57,25 +57,25 @@ class ScheduleCell:
     def titles(self):
         return [] if self.value is None else self.value.split(' / ')
 
-    @property
-    def begin_time(self) -> datetime.datetime:
-        index = (self.first_column - FIRST_SCHEDULE_COLUMN) % 9
+    def _get_time(self, last: bool = False):
+        row = self.first_row if not last else self.last_row
+        column = self.first_column if not last else self.last_column
+
+        index = (column - FIRST_SCHEDULE_COLUMN) % 9
 
         date = self._parent_schedule.start_date + datetime.timedelta(
-            days=(self.first_row - FIRST_SCHEDULE_ROW) * 7 + (self.first_column - FIRST_SCHEDULE_COLUMN) // 9)
+            days=(row - FIRST_SCHEDULE_ROW) * 7 + (column - FIRST_SCHEDULE_COLUMN) // 9)
         time = BEGIN_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
 
         return date.replace(hour=time[0], minute=time[1])
 
     @property
+    def begin_time(self) -> datetime.datetime:
+        return self._get_time()
+
+    @property
     def end_time(self) -> datetime.datetime:
-        index = (self.last_column - FIRST_SCHEDULE_COLUMN) % 9
-
-        date = self._parent_schedule.start_date + datetime.timedelta(
-            days=(self.last_row - FIRST_SCHEDULE_ROW) * 7 + (self.last_column - FIRST_SCHEDULE_COLUMN) // 9)
-        time = END_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
-
-        return date.replace(hour=time[0], minute=time[1])
+        return self._get_time(True)
 
 
 class Schedule:
