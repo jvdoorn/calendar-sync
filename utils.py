@@ -1,3 +1,4 @@
+import datetime
 import os
 import pickle
 from typing import Dict, List, Tuple
@@ -9,6 +10,7 @@ from openpyxl import load_workbook
 
 from appointment import Appointment
 from config import *
+from constants import DATE_FORMAT
 
 
 def get_credentials():

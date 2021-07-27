@@ -1,7 +1,3 @@
-import datetime
-
-from openpyxl.utils import column_index_from_string
-
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 SCHEDULE = '/Users/julian/Dropbox/University/rooster.xlsx'
@@ -15,18 +11,8 @@ END_TIMES_ONLINE = [(10, 00), (11, 00), (12, 00), (13, 00), (14, 00), (15, 00), 
 
 EXAMS_ALL_DAY = True
 
-FIRST_DATE = datetime.datetime(2020, 8, 31)
-LAST_COLUMN = column_index_from_string('AU')
-FIRST_COLUMN = column_index_from_string('C')
-LAST_ROW = 56
-FIRST_ROW = 3
-
 CAMPUS_LOCATION = "Niels Bohrweg 2\n2333 CA Leiden\nNetherlands"
 
 STORAGE_FILE = 'storage'
 
 TIME_ZONE = 'Europe/Amsterdam'
-
-DATE_FORMAT: str = '%Y-%m-%d'
-TIME_FORMAT: str = '%H:%M:%S'
-DATE_TIME_FORMAT: str = DATE_FORMAT + 'T' + TIME_FORMAT

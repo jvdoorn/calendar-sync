@@ -4,15 +4,18 @@ from typing import List, Union
 from openpyxl import load_workbook
 from openpyxl.cell import Cell, MergedCell
 from openpyxl.styles.colors import Color
+from openpyxl.worksheet.worksheet import Worksheet
 
 from appointment import Appointment, AppointmentType
-from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE, FIRST_COLUMN, FIRST_DATE, \
-    FIRST_ROW, LAST_COLUMN, LAST_ROW
+from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE, END_TIMES_CAMPUS, END_TIMES_ONLINE
+from constants import FIRST_DATE_CELL, FIRST_SCHEDULE_COLUMN, FIRST_SCHEDULE_ROW, \
+    LAST_SCHEDULE_COLUMN
 
 
 class ScheduleCell:
-    def __init__(self, parent_cell: Cell):
+    def __init__(self, parent_cell: Cell, parent_schedule):
         self._parent_cell: Cell = parent_cell
+        self._parent_schedule: Schedule = parent_schedule
 
         self.last_column: int = parent_cell.column
         self.last_row: int = parent_cell.row
@@ -56,20 +59,20 @@ class ScheduleCell:
 
     @property
     def begin_time(self) -> datetime.datetime:
-        index = (self.first_column - FIRST_COLUMN) % 9
+        index = (self.first_column - FIRST_SCHEDULE_COLUMN) % 9
 
-        date = FIRST_DATE + datetime.timedelta(
-            days=(self.first_row - FIRST_ROW) * 7 + (self.first_column - FIRST_COLUMN) // 9)
+        date = self._parent_schedule.start_date + datetime.timedelta(
+            days=(self.first_row - FIRST_SCHEDULE_ROW) * 7 + (self.first_column - FIRST_SCHEDULE_COLUMN) // 9)
         time = BEGIN_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
 
         return date.replace(hour=time[0], minute=time[1])
 
     @property
     def end_time(self) -> datetime.datetime:
-        index = (self.last_column - FIRST_COLUMN) % 9
+        index = (self.last_column - FIRST_SCHEDULE_COLUMN) % 9
 
-        date = FIRST_DATE + datetime.timedelta(
-            days=(self.last_row - FIRST_ROW) * 7 + (self.last_column - FIRST_COLUMN) // 9)
+        date = self._parent_schedule.start_date + datetime.timedelta(
+            days=(self.last_row - FIRST_SCHEDULE_ROW) * 7 + (self.last_column - FIRST_SCHEDULE_COLUMN) // 9)
         time = END_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else END_TIMES_ONLINE[index]
 
         return date.replace(hour=time[0], minute=time[1])
@@ -77,17 +80,20 @@ class ScheduleCell:
 
 class Schedule:
     def __init__(self, file: str):
-        self._worksheet = load_workbook(file).active
+        self._worksheet: Worksheet = load_workbook(file).active
+        self._cells = [cell for row in self.get_row_iterator() for cell in row]
+
+        date_cell: Cell = self._worksheet[FIRST_DATE_CELL]
+        self.start_date = date_cell.value
 
     def __iter__(self):
-        self._cells = [cell for row in self.rows for cell in row]
-        self._iterator_cell = ScheduleCell(self._cells[0])
+        self._iterator_cell = ScheduleCell(self._cells[0], self)
         self._iterator_index = 0
         return self
 
-    @property
-    def rows(self):
-        return self._worksheet.iter_rows(min_row=FIRST_ROW, max_row=LAST_ROW, min_col=FIRST_COLUMN, max_col=LAST_COLUMN)
+    def get_row_iterator(self):
+        return self._worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
+                                         max_col=LAST_SCHEDULE_COLUMN)
 
     def __next__(self) -> ScheduleCell:
         if self._iterator_index == len(self._cells):
@@ -105,7 +111,7 @@ class Schedule:
             return self.__next__()
         else:
             current_cell = self._iterator_cell
-            self._iterator_cell = None if next_cell is None else ScheduleCell(next_cell)
+            self._iterator_cell = None if next_cell is None else ScheduleCell(next_cell, self)
             return current_cell
 
     def get_appointments_from_workbook(self) -> List[Appointment]:

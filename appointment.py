@@ -3,7 +3,8 @@ import hashlib
 from enum import Enum
 from typing import Union
 
-from config import CAMPUS_LOCATION, DATE_FORMAT, DATE_TIME_FORMAT, EXAMS_ALL_DAY, TIME_ZONE
+from config import CAMPUS_LOCATION, EXAMS_ALL_DAY, TIME_ZONE
+from constants import DATE_FORMAT, DATE_TIME_FORMAT
 
 
 class AppointmentType(Enum):
