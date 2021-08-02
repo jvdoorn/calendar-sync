@@ -8,7 +8,7 @@ from constants import DATE_FORMAT, DATE_TIME_FORMAT
 
 
 class AppointmentType(Enum):
-    HOLIDAY, ONLINE, CAMPUS, EXAM, EMPTY = 'HOLIDAY', 'ONLINE', 'CAMPUS', 'EXAM', 'EMPTY'
+    HOLIDAY, CAMPUS, EXAM, EMPTY = 'HOLIDAY', 'CAMPUS', 'EXAM', 'EMPTY'
 
 
 class Appointment:

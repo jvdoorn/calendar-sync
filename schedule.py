@@ -7,9 +7,8 @@ from openpyxl.styles.colors import Color
 from openpyxl.worksheet.worksheet import Worksheet
 
 from appointment import Appointment, AppointmentType
-from config import BEGIN_TIMES_CAMPUS, BEGIN_TIMES_ONLINE
-from constants import FIRST_DATE_CELL, FIRST_SCHEDULE_COLUMN, FIRST_SCHEDULE_ROW, \
-    LAST_SCHEDULE_COLUMN
+from config import BEGIN_TIMES, END_TIMES
+from constants import FIRST_DATE_CELL, FIRST_SCHEDULE_COLUMN, FIRST_SCHEDULE_ROW, LAST_SCHEDULE_COLUMN
 
 
 class ScheduleCell:
@@ -38,7 +37,7 @@ class ScheduleCell:
         elif self.color.theme == 5:
             return AppointmentType.EXAM
         elif rgb == '00000000':
-            return AppointmentType.ONLINE
+            return AppointmentType.CAMPUS
         elif rgb == 'FFFFC000' or theme == 7:
             return AppointmentType.HOLIDAY
         else:
@@ -65,7 +64,7 @@ class ScheduleCell:
 
         date = self._parent_schedule.start_date + datetime.timedelta(
             days=(row - FIRST_SCHEDULE_ROW) * 7 + (column - FIRST_SCHEDULE_COLUMN) // 9)
-        time = BEGIN_TIMES_CAMPUS[index] if self.type is AppointmentType.CAMPUS else BEGIN_TIMES_ONLINE[index]
+        time = BEGIN_TIMES[index] if not last else END_TIMES[index]
 
         return date.replace(hour=time[0], minute=time[1])
 
