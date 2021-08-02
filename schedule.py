@@ -12,9 +12,9 @@ from constants import FIRST_DATE_CELL, FIRST_SCHEDULE_COLUMN, FIRST_SCHEDULE_ROW
 
 
 class ScheduleCell:
-    def __init__(self, parent_cell: Cell, parent_schedule):
+    def __init__(self, parent_cell: Cell, reference_date):
         self._parent_cell: Cell = parent_cell
-        self._parent_schedule: Schedule = parent_schedule
+        self._reference_date = reference_date
 
         self.last_column: int = parent_cell.column
         self.last_row: int = parent_cell.row
@@ -60,11 +60,11 @@ class ScheduleCell:
         row = self.first_row if not last else self.last_row
         column = self.first_column if not last else self.last_column
 
-        index = (column - FIRST_SCHEDULE_COLUMN) % 9
+        time_index = (column - FIRST_SCHEDULE_COLUMN) % 9
+        days_delta = (row - FIRST_SCHEDULE_ROW) * 7 + (column - FIRST_SCHEDULE_COLUMN) // 9
 
-        date = self._parent_schedule.start_date + datetime.timedelta(
-            days=(row - FIRST_SCHEDULE_ROW) * 7 + (column - FIRST_SCHEDULE_COLUMN) // 9)
-        time = BEGIN_TIMES[index] if not last else END_TIMES[index]
+        date = self._reference_date + datetime.timedelta(days=days_delta)
+        time = BEGIN_TIMES[time_index] if not last else END_TIMES[time_index]
 
         return date.replace(hour=time[0], minute=time[1])
 
@@ -82,39 +82,33 @@ class Schedule:
         self._worksheets: List[Worksheet] = load_workbook(file).worksheets
 
     def __iter__(self):
+        worksheet = self._worksheets.pop()
+        print(f'Processing {worksheet.title}.')
+
+        rows = worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
+                                   max_col=LAST_SCHEDULE_COLUMN)
+        self._cells = [cell for row in rows for cell in row]
+
+        date_cell: Cell = worksheet[FIRST_DATE_CELL]
+        self._reference_date = date_cell.value
+
         return self
 
     def __next__(self) -> ScheduleCell:
-        if not hasattr(self, '_cells') or self._iterator_index == len(self._cells):
+        if len(self._cells) == 0:
             if len(self._worksheets) == 0:
                 raise StopIteration
+            else:
+                self.__iter__()
 
-            worksheet = self._worksheets.pop()
-            print(f'Processing {worksheet.title}.')
-            rows = worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
-                                       max_col=LAST_SCHEDULE_COLUMN)
-            self._cells = [cell for row in rows for cell in row]
+        current_cell = ScheduleCell(self._cells.pop(0), self._reference_date)
+        while len(self._cells) > 0 and isinstance(self._cells[0], MergedCell):
+            cell = self._cells.pop(0)
 
-            self._iterator_cell = ScheduleCell(self._cells[0], self)
-            self._iterator_index = 0
+            current_cell.last_column = cell.column
+            current_cell.last_row = cell.row
 
-            date_cell: Cell = worksheet[FIRST_DATE_CELL]
-            self.start_date = date_cell.value
-
-        next_index = self._iterator_index + 1
-        next_cell: Union[None, Cell] = None if next_index == len(self._cells) else self._cells[next_index]
-
-        self._iterator_index = next_index
-
-        if isinstance(next_cell, MergedCell):
-            self._iterator_cell.last_column = next_cell.column
-            self._iterator_cell.last_row = next_cell.row
-
-            return self.__next__()
-        else:
-            current_cell = self._iterator_cell
-            self._iterator_cell = None if next_cell is None else ScheduleCell(next_cell, self)
-            return current_cell
+        return current_cell
 
     def get_appointments_from_workbook(self) -> List[Appointment]:
         appointments_in_workbook: List[Appointment] = []
