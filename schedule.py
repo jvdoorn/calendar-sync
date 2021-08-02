@@ -80,24 +80,27 @@ class ScheduleCell:
 
 class Schedule:
     def __init__(self, file: str):
-        self._worksheet: Worksheet = load_workbook(file).active
-        self._cells = [cell for row in self.get_row_iterator() for cell in row]
-
-        date_cell: Cell = self._worksheet[FIRST_DATE_CELL]
-        self.start_date = date_cell.value
+        self._worksheets: List[Worksheet] = load_workbook(file).worksheets
 
     def __iter__(self):
-        self._iterator_cell = ScheduleCell(self._cells[0], self)
-        self._iterator_index = 0
         return self
 
-    def get_row_iterator(self):
-        return self._worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
-                                         max_col=LAST_SCHEDULE_COLUMN)
-
     def __next__(self) -> ScheduleCell:
-        if self._iterator_index == len(self._cells):
-            raise StopIteration
+        if not hasattr(self, '_cells') or self._iterator_index == len(self._cells):
+            if len(self._worksheets) == 0:
+                raise StopIteration
+
+            worksheet = self._worksheets.pop()
+            print(f'Processing {worksheet.title}.')
+            rows = worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
+                                       max_col=LAST_SCHEDULE_COLUMN)
+            self._cells = [cell for row in rows for cell in row]
+
+            self._iterator_cell = ScheduleCell(self._cells[0], self)
+            self._iterator_index = 0
+
+            date_cell: Cell = worksheet[FIRST_DATE_CELL]
+            self.start_date = date_cell.value
 
         next_index = self._iterator_index + 1
         next_cell: Union[None, Cell] = None if next_index == len(self._cells) else self._cells[next_index]
