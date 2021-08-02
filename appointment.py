@@ -22,6 +22,8 @@ class Appointment:
         self.remote_event_id = None
 
     def __str__(self):
+        if self.is_all_day:
+            return f"{self.title} ({self.begin_time.strftime(DATE_FORMAT)} - {self.end_time.strftime(DATE_FORMAT)} all day)"
         return f"{self.title} ({self.begin_time} - {self.end_time})"
 
     @property
