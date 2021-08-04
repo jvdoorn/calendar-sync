@@ -7,7 +7,7 @@ def main(dry: bool = False):
     calendar = get_calendar_service() if not dry else None
     schedule = Schedule(SCHEDULE)
 
-    remote_appointments = get_stored_appointments()
+    remote_appointments = get_appointments_from_cache()
     schedule_appointments = schedule.get_appointments_from_workbook()
 
     created_event_count = 0

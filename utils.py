@@ -6,7 +6,6 @@ from typing import Dict, List, Tuple
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build as get_service
-from openpyxl import load_workbook
 
 from appointment import Appointment
 from config import *
@@ -23,8 +22,7 @@ def get_credentials():
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
             credentials = flow.run_local_server(port=0)
         with open('token.pickle', 'wb') as token:
             pickle.dump(credentials, token)
@@ -37,26 +35,19 @@ def get_calendar_service():
     return get_service('calendar', 'v3', credentials=credentials)
 
 
-def get_stored_appointments() -> Dict[str, Tuple[str, bool]]:
-    stored_appointments = {}
+def get_appointments_from_cache() -> Dict[str, Tuple[str, bool]]:
+    cached_appointments = {}
 
     if not os.path.exists(STORAGE_FILE):
-        return stored_appointments
+        return cached_appointments
 
     with open(STORAGE_FILE) as storage:
         for line in storage:
-            try:
-                (checksum, event_id, date) = line.split()
-            except ValueError:
-                checksum, event_id, date = *line.split(), None
+            checksum, event_id, date = line.split()
+            historic = datetime.datetime.strptime(date, DATE_FORMAT) < datetime.datetime.now()
 
-            try:
-                historic = datetime.datetime.strptime(date, DATE_FORMAT) < datetime.datetime.now()
-            except (AttributeError, TypeError):
-                historic = False
-
-            stored_appointments[checksum] = (event_id, historic)
-    return stored_appointments
+            cached_appointments[checksum] = (event_id, historic)
+    return cached_appointments
 
 
 def save_appointments_to_cache(appointments: List[Appointment]):
@@ -69,10 +60,6 @@ def save_appointments_to_cache(appointments: List[Appointment]):
 def delete_remote_appointments(event_ids: list, calendar):
     for event_id in event_ids:
         delete_appointment(calendar, event_id)
-
-
-def load_workbook_from_disk():
-    return load_workbook(SCHEDULE).active
 
 
 def update_end_time(previous_appointment, new_end_time):
