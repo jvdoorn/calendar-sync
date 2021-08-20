@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 
@@ -37,7 +38,7 @@ def delete_remote_appointments(event_ids: list, calendar):
 
     def callback(id, _, exception):
         if exception is not None:
-            print(f'Failed to delete event: {exception}.')
+            logging.exception(f'Failed to delete event: {exception}.')
 
     for event_id in event_ids:
         batch.add(calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id), callback)
@@ -48,8 +49,8 @@ def delete_remote_appointments(event_ids: list, calendar):
 def create_appointment(calendar, appointment):
     try:
         event = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(num_retries=10)
-        print(f"Created a new event {appointment}.")
+        logging.info(f"Created a new event {appointment}.")
         return event.get('id')
     except Exception as e:
-        print(f'Error creating event {appointment}: {e}.')
+        logging.exception(f'Error creating event {appointment}: {e}.')
         return None

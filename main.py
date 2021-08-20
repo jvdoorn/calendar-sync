@@ -1,3 +1,5 @@
+import logging
+
 from arguments import parser
 from config import SCHEDULE
 from schedule import Schedule
@@ -29,7 +31,7 @@ def main(dry: bool = False):
             event_id = create_appointment(calendar, appointment)
             appointment.remote_event_id = event_id
         else:
-            print(f"Would create a new event {appointment}.")
+            logging.info(f"Would create a new event {appointment}.")
         created_event_count += 1
 
     events_to_be_deleted = [event_id for event_id, historic in remote_appointments.values() if not historic]
@@ -40,10 +42,11 @@ def main(dry: bool = False):
         delete_remote_appointments(events_to_be_deleted, calendar)
         save_appointments_to_cache(events_to_be_saved)
     else:
-        print(f"Would create {created_event_count} event(s) in total.")
-        print(f"Would delete {len(events_to_be_deleted)} event(s) in total.")
+        logging.info(f"Would create {created_event_count} event(s) in total.")
+        logging.info(f"Would delete {len(events_to_be_deleted)} event(s) in total.")
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     options = parser.parse_args()
     main(options.dry)

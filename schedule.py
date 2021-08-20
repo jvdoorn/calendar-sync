@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import List, Union
 
 from openpyxl import load_workbook
@@ -41,7 +42,7 @@ class ScheduleCell:
         elif rgb == 'FFFFC000' or theme == 7:
             return AppointmentType.HOLIDAY
         else:
-            print(f'WARNING: failed to determine appointment type for {self.value} with color {self.color}.')
+            logging.warning(f'WARNING: failed to determine appointment type for {self.value} with color {self.color}.')
             return AppointmentType.EMPTY
 
     @property
@@ -83,7 +84,7 @@ class Schedule:
 
     def __iter__(self):
         worksheet = self._worksheets.pop()
-        print(f'Processing {worksheet.title}.')
+        logging.info(f'Processing {worksheet.title}.')
 
         rows = worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
                                    max_col=LAST_SCHEDULE_COLUMN)
