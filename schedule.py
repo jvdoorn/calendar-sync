@@ -83,24 +83,23 @@ class Schedule:
         self._worksheets: List[Worksheet] = load_workbook(file).worksheets
 
     def __iter__(self):
-        worksheet = self._worksheets.pop()
-        logging.info(f'Processing {worksheet.title}.')
-
-        rows = worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
-                                   max_col=LAST_SCHEDULE_COLUMN)
-        self._cells = [cell for row in rows for cell in row]
-
-        date_cell: Cell = worksheet[FIRST_DATE_CELL]
-        self._reference_date = date_cell.value
-
+        self._cells: List[Cell] = []
         return self
 
     def __next__(self) -> ScheduleCell:
         if len(self._cells) == 0:
             if len(self._worksheets) == 0:
                 raise StopIteration
-            else:
-                self.__iter__()
+
+            self._worksheet = self._worksheets.pop()
+            logging.info(f'Processing worksheet {self._worksheet.title}.')
+
+            rows = self._worksheet.iter_rows(min_row=FIRST_SCHEDULE_ROW, min_col=FIRST_SCHEDULE_COLUMN,
+                                             max_col=LAST_SCHEDULE_COLUMN)
+            self._cells = [cell for row in rows for cell in row]
+
+            date_cell: Cell = self._worksheet[FIRST_DATE_CELL]
+            self._reference_date = date_cell.value
 
         current_cell = ScheduleCell(self._cells.pop(0), self._reference_date)
         while len(self._cells) > 0 and isinstance(self._cells[0], MergedCell):
