@@ -1,16 +1,12 @@
-import datetime
 import os
 import pickle
-from typing import Dict, List, Tuple
 
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build as get_service
 from googleapiclient.http import BatchHttpRequest
 
-from appointment import Appointment
-from config import *
-from constants import DATE_FORMAT
+from config import CALENDAR_ID, SCOPES
 
 
 def get_credentials():
@@ -36,28 +32,6 @@ def get_calendar_service():
     return get_service('calendar', 'v3', credentials=credentials)
 
 
-def get_appointments_from_cache() -> Dict[str, Tuple[str, bool]]:
-    cached_appointments = {}
-
-    if not os.path.exists(STORAGE_FILE):
-        return cached_appointments
-
-    with open(STORAGE_FILE) as storage:
-        for line in storage:
-            checksum, event_id, date = line.split()
-            historic = datetime.datetime.strptime(date, DATE_FORMAT) < datetime.datetime.now()
-
-            cached_appointments[checksum] = (event_id, historic)
-    return cached_appointments
-
-
-def save_appointments_to_cache(appointments: List[Appointment]):
-    with open(STORAGE_FILE, 'w') as f:
-        for appointment in appointments:
-            f.write(
-                f'{appointment.checksum} {appointment.remote_event_id} {appointment.end_time.strftime(DATE_FORMAT)}\n')
-
-
 def delete_remote_appointments(event_ids: list, calendar):
     batch: BatchHttpRequest = calendar.new_batch_http_request()
 
@@ -69,10 +43,6 @@ def delete_remote_appointments(event_ids: list, calendar):
         batch.add(calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id), callback)
 
     batch.execute()
-
-
-def update_end_time(previous_appointment, new_end_time):
-    previous_appointment.end_time = new_end_time
 
 
 def create_appointment(calendar, appointment):

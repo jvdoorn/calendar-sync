@@ -1,6 +1,8 @@
 from arguments import parser
+from config import SCHEDULE
 from schedule import Schedule
-from utils import *
+from utils.cache import get_appointments_from_cache, save_appointments_to_cache
+from utils.google import create_appointment, delete_remote_appointments, get_calendar_service
 
 
 def main(dry: bool = False):
