@@ -1,20 +1,23 @@
 import logging
+from typing import Dict, List, Tuple
 
+from appointment import Appointment
 from arguments import parser
 from config import SCHEDULE
 from schedule import Schedule
 from utils.cache import get_cached_remote_appointments, save_remote_appointments_to_cache
-from utils.google import create_appointment, delete_remote_appointments, get_calendar_service
+from utils.google import create_remote_appointments, delete_remote_appointments, \
+    get_calendar_service
 
 
 def main(dry: bool = False):
     calendar = get_calendar_service() if not dry else None
     schedule = Schedule(SCHEDULE)
 
-    remote_appointments = get_cached_remote_appointments()
-    schedule_appointments = schedule.get_appointments_from_workbook()
+    remote_appointments: Dict[str, Tuple[str, bool]] = get_cached_remote_appointments()
+    schedule_appointments: List[Appointment] = schedule.get_appointments_from_workbook()
 
-    created_event_count = 0
+    appointments_to_be_created: List[Appointment] = []
 
     for appointment in schedule_appointments:
         checksum = appointment.checksum
@@ -26,24 +29,21 @@ def main(dry: bool = False):
 
         if appointment.is_historic:
             continue
-
-        if not dry:
-            event_id = create_appointment(calendar, appointment)
-            appointment.remote_event_id = event_id
         else:
-            logging.info(f"Would create a new event {appointment}.")
-        created_event_count += 1
+            appointments_to_be_created.append(appointment)
 
-    events_to_be_deleted = [event_id for event_id, historic in remote_appointments.values() if not historic]
-    events_to_be_saved = [appointment for appointment in schedule_appointments if
-                          not appointment.is_historic and appointment.remote_event_id]
+    appointments_to_be_deleted = [event_id for event_id, historic in remote_appointments.values() if not historic]
 
     if not dry:
-        delete_remote_appointments(events_to_be_deleted, calendar)
-        save_remote_appointments_to_cache(events_to_be_saved)
+        create_remote_appointments(appointments_to_be_created, calendar)
+        delete_remote_appointments(appointments_to_be_deleted, calendar)
+
+        appointments_to_be_cached = [appointment for appointment in schedule_appointments if
+                                     not appointment.is_historic and appointment.remote_event_id]
+        save_remote_appointments_to_cache(appointments_to_be_cached)
     else:
-        logging.info(f"Would create {created_event_count} event(s) in total.")
-        logging.info(f"Would delete {len(events_to_be_deleted)} event(s) in total.")
+        logging.info(f"Would create {len(appointments_to_be_created)} event(s) in total.")
+        logging.info(f"Would delete {len(appointments_to_be_deleted)} event(s) in total.")
 
 
 if __name__ == '__main__':
