@@ -47,6 +47,7 @@ def main(dry: bool = False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     options = parser.parse_args()
+    logging.basicConfig(level=logging.getLevelName(options.log_level))
+
     main(options.dry)
