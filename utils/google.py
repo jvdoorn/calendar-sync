@@ -1,12 +1,14 @@
 import logging
 import os
 import pickle
+from typing import List
 
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build as get_service
 from googleapiclient.http import BatchHttpRequest
 
+from appointment import Appointment
 from config import CALENDAR_ID, SCOPES
 
 
@@ -36,7 +38,7 @@ def get_calendar_service():
 def delete_remote_appointments(event_ids: list, calendar):
     batch: BatchHttpRequest = calendar.new_batch_http_request()
 
-    def callback(id, _, exception):
+    def callback(id, response, exception):
         if exception is not None:
             logging.exception(f'Failed to delete event: {exception}.')
 
@@ -46,11 +48,17 @@ def delete_remote_appointments(event_ids: list, calendar):
     batch.execute()
 
 
-def create_appointment(calendar, appointment):
-    try:
-        event = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()).execute(num_retries=10)
-        logging.info(f"Created a new event {appointment}.")
-        return event.get('id')
-    except Exception as e:
-        logging.exception(f'Error creating event {appointment}: {e}.')
-        return None
+def create_remote_appointments(appointments: List[Appointment], calendar):
+    batch: BatchHttpRequest = calendar.new_batch_http_request()
+
+    for appointment in appointments:
+        def callback(id, event, exception):
+            if exception is not None:
+                logging.exception(f'Failed to delete event: {exception}.')
+            else:
+                appointment.remote_event_id = event.get('id')
+                logging.info(f'Created a new appointment {appointment}, with remote ID {appointment.remote_event_id}')
+
+        batch.add(calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()), callback)
+
+    batch.execute()
