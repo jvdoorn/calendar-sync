@@ -3,7 +3,7 @@ import logging
 from arguments import parser
 from config import SCHEDULE
 from schedule import Schedule
-from utils.cache import get_appointments_from_cache, save_appointments_to_cache
+from utils.cache import get_cached_remote_appointments, save_remote_appointments_to_cache
 from utils.google import create_appointment, delete_remote_appointments, get_calendar_service
 
 
@@ -11,7 +11,7 @@ def main(dry: bool = False):
     calendar = get_calendar_service() if not dry else None
     schedule = Schedule(SCHEDULE)
 
-    remote_appointments = get_appointments_from_cache()
+    remote_appointments = get_cached_remote_appointments()
     schedule_appointments = schedule.get_appointments_from_workbook()
 
     created_event_count = 0
@@ -40,7 +40,7 @@ def main(dry: bool = False):
 
     if not dry:
         delete_remote_appointments(events_to_be_deleted, calendar)
-        save_appointments_to_cache(events_to_be_saved)
+        save_remote_appointments_to_cache(events_to_be_saved)
     else:
         logging.info(f"Would create {created_event_count} event(s) in total.")
         logging.info(f"Would delete {len(events_to_be_deleted)} event(s) in total.")
