@@ -26,6 +26,8 @@ def get_cached_remote_appointments() -> Dict[str, Tuple[str, bool]]:
 
 
 def save_remote_appointments_to_cache(appointments: List[Appointment]):
+    logging.info(f'Saving {len(appointments)} to cache.')
+
     with open(CACHE_FILE, 'w') as cache:
         for appointment in appointments:
             cache.write(
