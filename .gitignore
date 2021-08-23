@@ -212,6 +212,6 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-storage
+cache
 credentials.json
 token.pickle

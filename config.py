@@ -10,6 +10,6 @@ EXAMS_ALL_DAY = True
 
 CAMPUS_LOCATION = "Niels Bohrweg 2\n2333 CA Leiden\nNetherlands"
 
-STORAGE_FILE = 'storage'
+CACHE_FILE = 'cache'
 
 TIME_ZONE = 'Europe/Amsterdam'
