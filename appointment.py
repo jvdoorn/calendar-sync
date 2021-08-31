@@ -5,7 +5,7 @@ import os
 from enum import Enum
 from typing import Dict, Optional
 
-from config import EXAMS_ALL_DAY, TIME_ZONE
+from config import EXAMS_ALL_DAY, META_FILE, TIME_ZONE
 from constants import DATE_FORMAT, DATE_TIME_FORMAT
 
 
@@ -22,10 +22,10 @@ class AppointmentMeta:
 
 
 def load_appointment_meta() -> Dict[str, AppointmentMeta]:
-    if not os.path.exists('meta'):
+    if not os.path.exists(META_FILE):
         return {}
 
-    with open('meta') as json_file:
+    with open(META_FILE) as json_file:
         data = json.load(json_file)
         return dict([
             (subject, AppointmentMeta(**meta)) for (subject, meta) in enumerate(data)
@@ -40,7 +40,7 @@ def serialize_appointment_meta(appointment_meta: Dict[str, AppointmentMeta]) -> 
 
 
 def save_appointment_meta(appointment_meta: Dict[str, AppointmentMeta]):
-    with open('meta', 'w') as json_file:
+    with open(META_FILE, 'w') as json_file:
         json.dump(serialize_appointment_meta(appointment_meta), json_file, indent=4)
 
 

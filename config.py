@@ -8,8 +8,7 @@ END_TIMES = [(10, 00), (11, 00), (12, 00), (13, 00), (14, 00), (15, 00), (16, 00
 
 EXAMS_ALL_DAY = True
 
-CAMPUS_LOCATION = "Niels Bohrweg 2\n2333 CA Leiden\nNetherlands"
-
 CACHE_FILE = 'cache'
+META_FILE = 'meta'
 
 TIME_ZONE = 'Europe/Amsterdam'
