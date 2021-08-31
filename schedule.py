@@ -7,7 +7,7 @@ from openpyxl.cell import Cell, MergedCell
 from openpyxl.styles.colors import Color
 from openpyxl.worksheet.worksheet import Worksheet
 
-from appointment import Appointment, AppointmentType
+from appointment import Appointment, AppointmentMeta, AppointmentType
 from config import BEGIN_TIMES, END_TIMES
 from constants import FIRST_DATE_CELL, FIRST_SCHEDULE_COLUMN, FIRST_SCHEDULE_ROW, LAST_SCHEDULE_COLUMN
 
@@ -110,7 +110,7 @@ class Schedule:
 
         return current_cell
 
-    def get_appointments_from_workbook(self) -> List[Appointment]:
+    def get_appointments_from_workbook(self, appointment_meta) -> List[Appointment]:
         appointments_in_workbook: List[Appointment] = []
 
         previous_appointments: List[Appointment] = []
@@ -118,6 +118,7 @@ class Schedule:
             current_appointments: List[Appointment] = []
 
             for title in cell.titles:
+                title = title.strip()
                 appointment: Union[Appointment, None] = None
 
                 for previous_appointment in previous_appointments:
@@ -129,7 +130,13 @@ class Schedule:
                         break
 
                 if appointment is None:
-                    appointment = Appointment(title, cell.type, cell.begin_time, cell.end_time)
+                    try:
+                        meta = appointment_meta[title]
+                    except KeyError:
+                        meta = AppointmentMeta(title=title)
+                        appointment_meta[title] = meta
+
+                    appointment = Appointment(meta, cell.type, cell.begin_time, cell.end_time)
 
                 current_appointments.append(appointment)
 

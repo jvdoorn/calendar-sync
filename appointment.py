@@ -1,9 +1,11 @@
 import datetime
 import hashlib
+import json
+import os
 from enum import Enum
-from typing import Union
+from typing import Dict, Optional
 
-from config import CAMPUS_LOCATION, EXAMS_ALL_DAY, TIME_ZONE
+from config import EXAMS_ALL_DAY, TIME_ZONE
 from constants import DATE_FORMAT, DATE_TIME_FORMAT
 
 
@@ -11,9 +13,40 @@ class AppointmentType(Enum):
     HOLIDAY, CAMPUS, EXAM, EMPTY = 'HOLIDAY', 'CAMPUS', 'EXAM', 'EMPTY'
 
 
+class AppointmentMeta:
+    def __init__(self, title: str, location: Optional[str] = None):
+        self.title = title
+        self.location = location
+
+        self.accessed = False
+
+
+def load_appointment_meta() -> Dict[str, AppointmentMeta]:
+    if not os.path.exists('meta'):
+        return {}
+
+    with open('meta') as json_file:
+        data = json.load(json_file)
+        return dict([
+            (subject, AppointmentMeta(**meta)) for (subject, meta) in enumerate(data)
+        ])
+
+
+def serialize_appointment_meta(appointment_meta: Dict[str, AppointmentMeta]) -> Dict:
+    return dict([
+        (key, {'title': meta.title, 'location': meta.location}) for (key, meta) in appointment_meta.items() if
+        meta.accessed
+    ])
+
+
+def save_appointment_meta(appointment_meta: Dict[str, AppointmentMeta]):
+    with open('meta', 'w') as json_file:
+        json.dump(serialize_appointment_meta(appointment_meta), json_file, indent=4)
+
+
 class Appointment:
-    def __init__(self, title: str, type: AppointmentType, begin_time: datetime, end_time: datetime):
-        self.title: str = title
+    def __init__(self, meta: AppointmentMeta, type: AppointmentType, begin_time: datetime, end_time: datetime):
+        self.meta = meta
         self.type: AppointmentType = type
 
         self.begin_time: datetime = begin_time
@@ -23,8 +56,8 @@ class Appointment:
 
     def __str__(self):
         if self.is_all_day:
-            return f"{self.title} ({self.begin_time.strftime(DATE_FORMAT)} - {self.end_time.strftime(DATE_FORMAT)} all day)"
-        return f"{self.title} ({self.begin_time} - {self.end_time})"
+            return f"{self.meta.title} ({self.begin_time.strftime(DATE_FORMAT)} - {self.end_time.strftime(DATE_FORMAT)} all day)"
+        return f"{self.meta.title} ({self.begin_time} - {self.end_time})"
 
     @property
     def checksum(self) -> str:
@@ -69,13 +102,14 @@ class Appointment:
         return self.end_time < datetime.datetime.now()
 
     @property
-    def location(self) -> Union[str, None]:
-        if self.type == AppointmentType.CAMPUS:
-            return CAMPUS_LOCATION
-        else:
-            return None
+    def location(self) -> Optional[str]:
+        return self.meta.location
 
-    def serialize(self) -> dict:
+    @property
+    def title(self) -> Optional[str]:
+        return self.meta.title
+
+    def serialize(self) -> Dict:
         data = {
             'summary': self.title,
             'start': self.formatted_begin_time,
