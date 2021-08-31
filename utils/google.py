@@ -45,7 +45,8 @@ def delete_remote_appointments(event_ids: list, calendar):
             else:
                 logging.info(f'Deleted appointment with remote ID {event_id}.')
 
-        batch.add(calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id), callback)
+        request = calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id)
+        batch.add(request, callback)
 
     batch.execute()
 
@@ -56,11 +57,12 @@ def create_remote_appointments(appointments: List[Appointment], calendar):
     for appointment in appointments:
         def callback(id, event, exception):
             if exception is not None:
-                logging.exception(f'Failed to delete event: {exception}.')
+                logging.exception(f'Failed to create event: {exception}.')
             else:
                 appointment.remote_event_id = event.get('id')
                 logging.info(f'Created a new appointment {appointment}, with remote ID {appointment.remote_event_id}.')
 
-        batch.add(calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize()), callback)
+        request = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize())
+        batch.add(request, callback)
 
     batch.execute()
