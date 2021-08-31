@@ -6,8 +6,7 @@ from arguments import parser
 from config import SCHEDULE
 from schedule import Schedule
 from utils.cache import get_cached_remote_appointments, save_remote_appointments_to_cache
-from utils.google import create_remote_appointments, delete_remote_appointments, \
-    get_calendar_service
+from utils.google import create_remote_appointments, delete_remote_appointments, get_calendar_service
 
 
 def main(dry: bool = False):
