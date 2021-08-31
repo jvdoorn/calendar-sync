@@ -28,7 +28,7 @@ def load_appointment_meta() -> Dict[str, AppointmentMeta]:
     with open(META_FILE) as json_file:
         data = json.load(json_file)
         return dict([
-            (subject, AppointmentMeta(**meta)) for (subject, meta) in enumerate(data)
+            (subject, AppointmentMeta(title=meta['title'], location=meta['location'])) for (subject, meta) in data.items()
         ])
 
 
