@@ -22,6 +22,7 @@ def main(dry: bool = False):
     for appointment in schedule_appointments:
         try:
             event_id, _ = remote_appointments.pop(appointment.checksum)
+            appointment.meta.accessed = True
             appointment.remote_event_id = event_id
             continue
         except KeyError:
