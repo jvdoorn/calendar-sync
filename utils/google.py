@@ -32,21 +32,24 @@ def get_credentials():
 
 def get_calendar_service():
     credentials = get_credentials()
-    return get_service('calendar', 'v3', credentials=credentials)
+    return get_service('calendar', 'v3', credentials=credentials, cache_discovery=False)
 
 
 def delete_remote_appointments(event_ids: list, calendar):
     batch: BatchHttpRequest = calendar.new_batch_http_request()
 
-    for event_id in event_ids:
+    def make_callback(event_id):
         def callback(id, response, exception):
             if exception is not None:
                 logging.exception(f'Failed to delete event: {exception}.')
             else:
                 logging.info(f'Deleted appointment with remote ID {event_id}.')
 
+        return callback
+
+    for event_id in event_ids:
         request = calendar.events().delete(calendarId=CALENDAR_ID, eventId=event_id)
-        batch.add(request, callback)
+        batch.add(request=request, callback=make_callback(event_id))
 
     batch.execute()
 
@@ -54,15 +57,18 @@ def delete_remote_appointments(event_ids: list, calendar):
 def create_remote_appointments(appointments: List[Appointment], calendar):
     batch: BatchHttpRequest = calendar.new_batch_http_request()
 
-    for appointment in appointments:
-        def callback(id, event, exception):
+    def make_callback(appointment):
+        def callback(id, response, exception):
             if exception is not None:
                 logging.exception(f'Failed to create event: {exception}.')
             else:
-                appointment.remote_event_id = event.get('id')
+                appointment.remote_event_id = response.get('id')
                 logging.info(f'Created a new appointment {appointment}, with remote ID {appointment.remote_event_id}.')
 
+        return callback
+
+    for appointment in appointments:
         request = calendar.events().insert(calendarId=CALENDAR_ID, body=appointment.serialize())
-        batch.add(request, callback)
+        batch.add(request=request, callback=make_callback(appointment))
 
     batch.execute()
