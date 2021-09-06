@@ -19,7 +19,7 @@ def get_cached_remote_appointments() -> Dict[str, Tuple[str, bool]]:
         logging.debug('Loading remote appointments from cache.')
         for line in cache:
             checksum, event_id, date = line.split()
-            historic = datetime.datetime.strptime(date, DATE_FORMAT) < datetime.datetime.now()
+            historic = datetime.datetime.strptime(date, DATE_FORMAT).date() < datetime.datetime.now().date()
 
             cached_appointments[checksum] = (event_id, historic)
     return cached_appointments
